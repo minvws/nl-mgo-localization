@@ -1,0 +1,123 @@
+[
+    {
+        "_self": "/organizations/1",
+        "_className": "CSC.HPD.Organization",
+        "_id": "1",
+        "addresses": [
+          {
+            "active": true,
+            "address": "Orteliuslaan 1004\r\n3528BD UTRECHT",
+            "author": "Vektis",
+            "city": "UTRECHT",
+            "country": "NEDERLAND",
+            "lines": [ "Orteliuslaan 1004"],
+            "geolocation": null,
+            "index": "1",
+            "postalCode": "3528BD",
+            "state": "ZH",
+            "streetName": "Orteliuslaan",
+            "streetNumber": "1004",
+            "timestamp": "2020-11-03 12:49:40.265",
+            "type": "Practice"
+          }
+        ],
+        "applicationIds": [
+          "12345678"
+        ],
+        "attachments": null,
+        "author": "Vektis",
+        "comment": null,
+        "credentials": null,
+        "displayName": "Apotheek Janssen",
+        "electronicServices": [
+          {
+            "_className": "CSC.HPD.LSP.Application",
+            "active": true,
+            "address": "apotheek.voorbeeld.nl",
+            "applicationId": "12345678",
+            "author": "LSP",
+            "conformances": [
+              {
+                "interactionId": "COMT_IN113113NL",
+                "receive": true,
+                "send": true
+              }
+            ],
+            "description": null,
+            "index": "1",
+            "status": "active",
+            "systemRoles": [
+              "AllPurpose"
+            ],
+            "timestamp": "2020-08-24 13:48:56.726"
+          }
+        ],
+        "identifications": [
+          {
+            "active": true,
+            "author": "UZI",
+            "description": null,
+            "index": "1",
+            "timestamp": "2020-11-03 12:49:40.265",
+            "type": "URA",
+            "value": "12345678"
+          }
+        ],
+        "names": [
+          {
+            "active": true,
+            "author": "Vektis",
+            "fullName": "Apotheek Janssen",
+            "index": "1",
+            "preferred": false,
+            "timestamp": "2020-11-03 12:49:40.265",
+            "type": "Display"
+          }
+        ],
+        "speciality": null,
+        "telecoms": [
+          {
+            "active": true,
+            "author": "Vektis",
+            "index": "1",
+            "name": "Algemeen",
+            "preferred": false,
+            "timestamp": "2020-08-24 13:39:19.313",
+            "type": "Phone",
+            "value": "012-3456789"
+          }
+        ],
+        "timestamp": "2020-11-03 12:49:40.265",
+        "type": null,
+        "types": [
+          {
+            "active": true,
+            "author": "Vektis",
+            "code": "02",
+            "displayName": "Apothekers",
+            "index": "1",
+            "timestamp": "2020-11-03 12:49:40.265",
+            "type": "Vektis Zorgsoort"
+          },
+          {
+            "active": true,
+            "author": "VZVZ",
+            "code": "Z001",
+            "displayName": "Apotheek",
+            "index": "2",
+            "timestamp": "2020-11-03 12:49:40.265",
+            "type": "VZVZ"
+          },
+          {
+            "active": true,
+            "author": "VZVZ",
+            "code": "J8",
+            "displayName": "Openbare apotheek",
+            "index": "3",
+            "timestamp": "2020-11-03 12:49:40.265",
+            "type": "NICTIZ"
+          }
+        ],
+        "ura": "12345678"
+    }
+  ]

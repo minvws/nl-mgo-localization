@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<IAmRoot xmlns="xmlns://foo.bar/xml/namespace/">
+    <Test>IAmRoot/Test</Test>
+    <Nested>
+        <Elements>
+            <Element>IAmRoot/Nested/Elements/Element1</Element>
+            <Element>IAmRoot/Nested/Elements/Element2</Element>
+        </Elements>
+    </Nested>
+    <Single>
+        <Nested>
+            <Element>IAmRoot/Single/Nested/Element</Element>
+        </Nested>
+    </Single>
+    <NoText/>
+</IAmRoot>

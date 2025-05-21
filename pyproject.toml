@@ -1,0 +1,81 @@
+[tool.poetry]
+name = "localization"
+version = "0.0.0" # there is no need to bump this version as we don't distribute this as a package
+description = "localization service for the MGO project"
+license = "EUPL-1.2"
+authors = ["Ministerie van Volksgezondheid, Welzijn en Sport"]
+repository = "https://github.com/minvws/nl-pgo-localization-private"
+readme = "README.md"
+packages = [
+    { include = "app" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+uvicorn = "^0.34.2"
+fastapi = "^0.115.12"
+mypy = "^1.15.0"
+pydantic-settings = "^2.9.1"
+sqlalchemy = "^2.0.40"
+psycopg = {extras = ["binary", "pool"], version = "^3.2.7"}
+inject = "^5.2.0"
+xmltodict = "^0.14.2"
+requests = "^2.32.3"
+types-requests = "^2.32.0"
+fhir-resources = "^8.0.0"
+cryptography = "^44.0.3"
+orjson = "^3.10.18"
+defusedxml = "^0.7.1"
+lxml = "^5.4.0"
+pytest-watcher = "^0.4.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+httpx = "^0.28.1"
+ruff = "^0.11.8"
+safety = "^3.2.14"
+codespell = "^2.4.1"
+faker = "^37.1.0"
+pytest-mock = "^3.14.0"
+pytest-watcher = "^0.4.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+cache-dir = "~/.cache/ruff"
+include = [
+    "pyproject.toml",
+    "app/*.py",
+    "tests/*.py",
+]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "ERA", "F", "B", "SIM", "I", "TID251", "TID252"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"unittest".msg = "use pytest-mock instead"
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.params.Depends", "fastapi.Query", "fastapi.params.Query", "app.utils.resolve_instance"]
+
+[tool.mypy]
+files = "app,tests"
+python_version = "3.12"
+strict = true
+cache_dir = "~/.cache/mypy"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+cache_dir = "~/.cache/pytest"
+testpaths = [
+    "tests",
+]
+
+[tool.codespell]
+skip = [
+    "./static/*.js"
+]

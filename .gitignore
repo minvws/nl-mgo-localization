@@ -1,0 +1,8 @@
+.coverage
+coverage.xml
+__pycache__
+app.conf
+secrets/
+.autopilot
+.DS_Store
+.idea/

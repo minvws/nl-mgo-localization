@@ -1,0 +1,41 @@
+services:
+    app:
+        build:
+            context: .
+            args:
+                NEW_UID: ${NEW_UID:-1000}
+                NEW_GID: ${NEW_GID:-1000}
+        volumes:
+            - ./:/src
+        ports:
+            - 8006:8006
+        networks:
+            - pgo_load
+        security_opt:
+            - no-new-privileges:true
+
+    postgres:
+        image: postgres:14.10-bookworm
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=postgres
+        ports:
+            - 5432:5432
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        networks:
+            pgo_load:
+                aliases:
+                    - postgresql
+                    - database
+        security_opt:
+            - no-new-privileges:true
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  pgo_load:
+    driver: bridge

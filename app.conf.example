@@ -1,0 +1,56 @@
+# Global application settings
+[app]
+# Adapter to use to fetch ZorgAB data  (
+#  mock           | Returns the same data for all requests, with the data services pointing to the mock_base_url
+#  mock_hydrated  | Returns the same data for all requests, with the data actually being hydrated from an actual json response
+#  zorgab         | Fetches data from the ZorgAB API
+# )
+healthcare_adapter=mock
+# Adapter to use to fetch addressing data (mock | zal)
+addressing_adapter=mock
+
+# the url that point to the mock dva server
+mock_base_url=http://localhost:8002/
+
+;[logging]
+;logger_name=load
+;log_level=DEBUG
+
+# Database settings
+[database]
+# Full DSN of the database
+dsn=postgresql+psycopg://postgres:postgres@postgres:5432/postgres
+
+# ZorgAB HTTP settings
+[zorgab]
+# Base URL to zorgAB
+base_url=https://zab.test.aorta-zorg.nl/zab-ro
+# Certificate file for MTLS connection
+mtls_cert_file=secrets/mgo.cert
+# Key file for MTLS connection
+mtls_key_file=secrets/mgo.key
+# Chain file with the CA certificate
+mtls_chain_file=secrets/mgo.chain
+proxy=
+
+# Web server settings (development mode only)
+[uvicorn]
+# The host to be running on
+host = 0.0.0.0
+port = 8006
+reload = True
+
+# Should we create an SSL connection through uvicorn?
+use_ssl = False
+# Setting for the SSL connection when enabled, defined by the use_ssl setting.
+ssl_base_dir = secrets/ssl
+ssl_cert_file = server.cert
+ssl_key_file = server.key
+
+[signing]
+private_key_path=/src/secrets/private_signing.pem
+sign_endpoints=True
+
+;[healthcarefinder]
+; When set to True, a predefined search query can force the use of a ZorgAB mock adapter
+;allow_search_bypass=false

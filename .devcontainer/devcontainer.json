@@ -1,0 +1,46 @@
+{
+    "name": "localization",
+    "dockerComposeFile": [
+        "../docker-compose.yml",
+        "docker-compose.yml"
+    ],
+    "service": "app",
+    "workspaceFolder": "/src",
+    "shutdownAction": "stopCompose",
+    "remoteUser": "app",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "charliermarsh.ruff",
+                "ms-python.mypy-type-checker",
+                "EditorConfig.EditorConfig",
+                "redhat.vscode-yaml",
+                "mtxr.sqltools",
+                "mtxr.sqltools-driver-pg"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.testing.pytestEnabled": true,
+                "[python]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll.ruff": true,
+                        "source.organizeImports.ruff": true
+                    }
+                },
+                "sqltools.connections": [{
+                    "name": "Database",
+                    "driver": "PostgreSQL",
+                    "previewLimit": 50,
+                    "server": "postgres",
+                    "port": 5432,
+                    "database": "postgres",
+                    "username": "postgres",
+                    "password": "postgres"
+                }],
+            }
+        }
+    }
+}

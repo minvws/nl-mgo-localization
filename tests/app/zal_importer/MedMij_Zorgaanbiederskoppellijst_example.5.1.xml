@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--File version: 4 -->
+<Zorgaanbiederskoppellijst xmlns="xmlns://afsprakenstelsel.medmij.nl/Zorgaanbiederskoppellijst/release1/"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="xmlns://afsprakenstelsel.medmij.nl/Zorgaanbiederskoppellijst/release1/ ">
+	<Tijdstempel>2021-05-04T18:13:51.0+01:00</Tijdstempel>
+	<Volgnummer>13</Volgnummer>
+	<Zorgaanbieders>
+		<Zorgaanbieder>
+			<Zorgaanbiedernaam>umcharderwijk@medmij</Zorgaanbiedernaam>
+			<IdentificerendeKenmerken>
+				<IdentificerendKenmerk>
+					<AGB>90012345</AGB>
+				</IdentificerendKenmerk>
+			</IdentificerendeKenmerken>
+			<Gegevensdiensten>
+				<Gegevensdienst>
+					<GegevensdienstId>5</GegevensdienstId>
+					<Weergavenaam>Meetwaarden vitale functies</Weergavenaam>
+					<Interfaceversies>
+						<Interfaceversie>
+							<InterfaceversieId>1.4.0</InterfaceversieId>
+						</Interfaceversie>
+					</Interfaceversies>
+				</Gegevensdienst>
+				<Gegevensdienst>
+					<GegevensdienstId>6</GegevensdienstId>
+					<Weergavenaam>Verzamelen Documenten 1.0</Weergavenaam>
+					<Interfaceversies>
+						<Interfaceversie>
+							<InterfaceversieId>1.4.0</InterfaceversieId>
+						</Interfaceversie>
+					</Interfaceversies>
+				</Gegevensdienst>
+			</Gegevensdiensten>
+		</Zorgaanbieder>
+		<Zorgaanbieder>
+			<Zorgaanbiedernaam>radiologencentraalflevoland@medmij</Zorgaanbiedernaam>
+			<IdentificerendeKenmerken>
+				<IdentificerendKenmerk>
+					<OIN>23885731954438865098</OIN>
+				</IdentificerendKenmerk>
+				<IdentificerendKenmerk>
+					<URA>12345678</URA>
+				</IdentificerendKenmerk>
+			</IdentificerendeKenmerken>
+			<Gegevensdiensten>
+				<Gegevensdienst>
+					<GegevensdienstId>1</GegevensdienstId>
+					<Weergavenaam>Basisgegevens zorg</Weergavenaam>
+					<Interfaceversies>
+						<Interfaceversie>
+							<InterfaceversieId>1.3.0</InterfaceversieId>
+						</Interfaceversie>
+						<Interfaceversie>
+							<InterfaceversieId>1.4.0</InterfaceversieId>
+						</Interfaceversie>
+					</Interfaceversies>
+				</Gegevensdienst>
+			</Gegevensdiensten>
+		</Zorgaanbieder>
+	</Zorgaanbieders>
+</Zorgaanbiederskoppellijst>

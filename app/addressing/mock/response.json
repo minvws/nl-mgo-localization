@@ -1,0 +1,57 @@
+{
+    "medmij_id": "mock.addressing@medmij",
+    "organization_type": "ZA",
+    "id_type": "agb",
+    "id_value": "12345678",
+    "dataservices": [
+        {
+            "id": "51",
+            "name": "Documenten",
+            "interface_versions": [
+                "2"
+            ],
+            "auth_endpoint": "https://medmij-inlog.vzvz.nl/2.0.0/oauth2/authorize",
+            "token_endpoint": "https://medmij-pgo.vzvz.nl/2.0.0/oauth2/token",
+            "roles": [
+                {
+                    "code": "MM-3.0-PDB-FHIR",
+                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/51"
+                },
+                {
+                    "code": "MM-3.0-PLB-FHIR",
+                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/51"
+                }
+            ]
+        },
+        {
+            "id": "49",
+            "name": "Huisartsgegevens",
+            "interface_versions": [
+                "2"
+            ],
+            "auth_endpoint": "https://medmij-inlog.vzvz.nl/2.0.0/oauth2/authorize",
+            "token_endpoint": "https://medmij-pgo.vzvz.nl/2.0.0/oauth2/token",
+            "roles": [
+                {
+                    "code": "MM-2.0-HGB-FHIR",
+                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/49"
+                }
+            ]
+        },
+        {
+            "id": "48",
+            "name": "Basisgegevens Zorg",
+            "interface_versions": [
+                "2"
+            ],
+            "auth_endpoint": "https://medmij-inlog.vzvz.nl/2.0.0/oauth2/authorize",
+            "token_endpoint": "https://medmij-pgo.vzvz.nl/2.0.0/oauth2/token",
+            "roles": [
+                {
+                    "code": "MM-3.0-BZB-FHIR",
+                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/48"
+                }
+            ]
+        }
+    ]
+}

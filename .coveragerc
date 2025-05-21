@@ -1,0 +1,6 @@
+[run]
+relative_files = True
+source = app/
+branch = True
+omit =
+    app/cron/__main__.py
