@@ -20,7 +20,7 @@ sqlalchemy = "^2.0.40"
 psycopg = {extras = ["binary", "pool"], version = "^3.2.7"}
 inject = "^5.2.0"
 xmltodict = "^0.14.2"
-requests = "^2.32.3"
+requests = "^2.32.4"
 types-requests = "^2.32.0"
 fhir-resources = "^8.0.0"
 cryptography = "^44.0.3"
