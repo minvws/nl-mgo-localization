@@ -121,7 +121,6 @@ class MockHealthcareFinderAdapter(HealthcareFinderAdapter):
                 geolocation=self.__create_geolocation(address_data.get("geolocation", {})),
                 postalcode=address_data.get("postalcode", ""),
                 state=address_data.get("state", ""),
-                type=address_data.get("type", ""),
             )
             addresses.append(address)
         return addresses

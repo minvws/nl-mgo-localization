@@ -48,6 +48,7 @@ class HealthcareFinderAdapterFactory:
             mtls_key_file=self.__config.zorgab.mtls_key_file,
             mtls_chain_file=self.__config.zorgab.mtls_chain_file,
             proxy=self.__config.zorgab.proxy,
-            hydration_service=HydrationService(self.__addressing_service),
+            hydration_service=HydrationService(self.__addressing_service, self.__logger),
             logger=self.__logger,
+            suppress_hydration_errors=self.__config.healthcarefinder.suppress_hydration_errors,
         )

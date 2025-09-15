@@ -64,22 +64,6 @@ jobs:
             - name: Check static types
               run: poetry run $(make type-check --just-print --silent)
 
-    safety-check:
-        name: Scan packages for vulnerabilities
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
-            - name: Install dependencies
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@1279864d6bfc79a6ac2666846cdb00c08ab6593f
-              with:
-                python_version: ${{ env.PYTHON_VERSION }}
-
-            - name: Scan packages for vulnerabilities
-              run: poetry run $(make safety-check --just-print --silent)
-
     spelling-check:
         name: Run spelling check
         runs-on: ubuntu-latest

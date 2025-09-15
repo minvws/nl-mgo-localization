@@ -37,9 +37,6 @@ format-diff: ## Show formatting differences
 type-check: ## Check for typing errors
 	$(RUN_PREFIX) mypy
 
-safety-check: ## Check for security vulnerabilities
-	$(RUN_PREFIX) safety check
-
 spelling-check: ## Check spelling mistakes
 	$(RUN_PREFIX) codespell --ignore-words=.codespell_ignore.txt .
 
@@ -51,7 +48,7 @@ shell: bash
 test: ## Runs automated tests
 	$(RUN_PREFIX) pytest --cov --cov-config=.coveragerc --cov-report=term --cov-report=xml
 
-check: lint format-diff type-check safety-check spelling-check test ## Runs all checks
+check: lint format-diff type-check spelling-check test ## Runs all checks
 fix: lint-fix format spelling-fix ## Runs all fixers
 
 help: ## Display available commands

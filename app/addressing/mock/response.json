@@ -15,11 +15,11 @@
             "roles": [
                 {
                     "code": "MM-3.0-PDB-FHIR",
-                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/51"
+                    "resource_endpoint": "%MOCK_BASE_URL%/51"
                 },
                 {
                     "code": "MM-3.0-PLB-FHIR",
-                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/51"
+                    "resource_endpoint": "%MOCK_BASE_URL%/51"
                 }
             ]
         },
@@ -34,7 +34,7 @@
             "roles": [
                 {
                     "code": "MM-2.0-HGB-FHIR",
-                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/49"
+                    "resource_endpoint": "%MOCK_BASE_URL%/49"
                 }
             ]
         },
@@ -49,7 +49,7 @@
             "roles": [
                 {
                     "code": "MM-3.0-BZB-FHIR",
-                    "resource_endpoint": "https://dva-mock.test.mgo.irealisatie.nl/48"
+                    "resource_endpoint": "%MOCK_BASE_URL%/48"
                 }
             ]
         }

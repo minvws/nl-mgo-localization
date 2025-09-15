@@ -89,12 +89,12 @@ class HealthOrganizationFixtures:
                 "id": "48",
                 "name": "Basisgegevens Zorg",
                 "interface_versions": ["2"],
-                "auth_endpoint": "{{MOCK_URL}}auth",
-                "token_endpoint": "{{MOCK_URL}}token",
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
                 "roles": [
                     {
                         "code": "MM-3.0-BZB-FHIR",
-                        "resource_endpoint": "{{MOCK_URL}}48",
+                        "resource_endpoint": "{{MOCK_URL}}/48",
                     }
                 ],
             },
@@ -102,12 +102,12 @@ class HealthOrganizationFixtures:
                 "id": "49",
                 "name": "Huisartsgegevens",
                 "interface_versions": ["2"],
-                "auth_endpoint": "{{MOCK_URL}}auth",
-                "token_endpoint": "{{MOCK_URL}}token",
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
                 "roles": [
                     {
                         "code": "MM-3.0-HGB-FHIR",
-                        "resource_endpoint": "{{MOCK_URL}}49",
+                        "resource_endpoint": "{{MOCK_URL}}/49",
                     }
                 ],
             },
@@ -115,16 +115,16 @@ class HealthOrganizationFixtures:
                 "id": "51",
                 "name": "Documenten",
                 "interface_versions": ["2"],
-                "auth_endpoint": "{{MOCK_URL}}auth",
-                "token_endpoint": "{{MOCK_URL}}token",
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
                 "roles": [
                     {
                         "code": "MM-3.0-PLB-FHIR",
-                        "resource_endpoint": "{{MOCK_URL}}51",
+                        "resource_endpoint": "{{MOCK_URL}}/51",
                     },
                     {
                         "code": "MM-3.0-PDB-FHIR",
-                        "resource_endpoint": "{{MOCK_URL}}51",
+                        "resource_endpoint": "{{MOCK_URL}}/51",
                     },
                 ],
             },
@@ -192,12 +192,12 @@ class HealthOrganizationFixtures:
                 "id": "65",
                 "name": "Niet ondersteunde gegevensdienst: Zwangerschapskaart",
                 "interface_versions": ["2"],
-                "auth_endpoint": "{{MOCK_URL}}auth",
-                "token_endpoint": "{{MOCK_URL}}token",
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
                 "roles": [
                     {
                         "code": "GZ-1.0-IZR-FHIR",
-                        "resource_endpoint": "{{MOCK_URL}}65",
+                        "resource_endpoint": "{{MOCK_URL}}/65",
                     },
                 ],
             }
@@ -251,12 +251,12 @@ class QualificationDataServiceFixtures(Enum):
             "1.6.0",
             "2.",
         ],
-        "auth_endpoint": "{{MOCK_URL}}auth",
-        "token_endpoint": "{{MOCK_URL}}token",
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
         "roles": [
             {
                 "code": "MM-3.0-BZB-FHIR",
-                "resource_endpoint": "{{MOCK_URL}}48",
+                "resource_endpoint": "{{MOCK_URL}}/48",
             }
         ],
     }
@@ -272,12 +272,12 @@ class QualificationDataServiceFixtures(Enum):
             "1.6.0",
             "2.",
         ],
-        "auth_endpoint": "{{MOCK_URL}}auth",
-        "token_endpoint": "{{MOCK_URL}}token",
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
         "roles": [
             {
                 "code": "MM-2.0-HGB-FHIR",
-                "resource_endpoint": "{{MOCK_URL}}49",
+                "resource_endpoint": "{{MOCK_URL}}/49",
             }
         ],
     }
@@ -293,16 +293,16 @@ class QualificationDataServiceFixtures(Enum):
             "1.6.0",
             "2.",
         ],
-        "auth_endpoint": "{{MOCK_URL}}auth",
-        "token_endpoint": "{{MOCK_URL}}token",
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
         "roles": [
             {
                 "code": "MM-3.0-PLB-FHIR",
-                "resource_endpoint": "{{MOCK_URL}}51",
+                "resource_endpoint": "{{MOCK_URL}}/51",
             },
             {
                 "code": "MM-3.0-PDB-FHIR",
-                "resource_endpoint": "{{MOCK_URL}}51",
+                "resource_endpoint": "{{MOCK_URL}}/51",
             },
         ],
     }
@@ -311,12 +311,12 @@ class QualificationDataServiceFixtures(Enum):
         "id": "63",
         "name": "Vaccinaties",
         "interface_versions": ["1.5.0", "1.6.0", "2."],
-        "auth_endpoint": "{{MOCK_URL}}auth",
-        "token_endpoint": "{{MOCK_URL}}token",
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
         "roles": [
             {
                 "code": "MM-1.0-VAB-FHIR",
-                "resource_endpoint": "{{MOCK_URL}}63",
+                "resource_endpoint": "{{MOCK_URL}}/63",
             }
         ],
     }

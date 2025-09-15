@@ -24,4 +24,4 @@ class HealthcareFinder:
         return self.__adapter.search_organizations(search=search)
 
     def __is_search_bypass_requested(self, search: SearchRequest) -> bool:
-        return search.name == "test" and search.city == "test"
+        return search.name.lower() == "test" and search.city.lower() == "test"

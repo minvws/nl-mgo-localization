@@ -80,7 +80,6 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                 geolocation=self.__create_geolocation(address_data.get("geolocation", {})),
                 postalcode=address_data.get("postalcode", ""),
                 state=address_data.get("state", ""),
-                type=address_data.get("type", ""),
             )
             addresses.append(address)
         return addresses
@@ -157,12 +156,12 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                     "id": "48",
                     "name": "Basisgegevens Zorg",
                     "interface_versions": ["2"],
-                    "auth_endpoint": self.__build_mock_url("authorize"),
-                    "token_endpoint": self.__build_mock_url("token"),
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
                     "roles": [
                         {
                             "code": "MM-3.0-BZB-FHIR",
-                            "resource_endpoint": self.__build_mock_url("48"),
+                            "resource_endpoint": self.__build_mock_url("/48"),
                         }
                     ],
                 },
@@ -170,16 +169,16 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                     "id": "51",
                     "name": "Documenten",
                     "interface_versions": ["2"],
-                    "auth_endpoint": self.__build_mock_url("authorize"),
-                    "token_endpoint": self.__build_mock_url("token"),
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
                     "roles": [
                         {
                             "code": "MM-3.0-PLB-FHIR",
-                            "resource_endpoint": self.__build_mock_url("51"),
+                            "resource_endpoint": self.__build_mock_url("/51"),
                         },
                         {
                             "code": "MM-3.0-PDB-FHIR",
-                            "resource_endpoint": self.__build_mock_url("51"),
+                            "resource_endpoint": self.__build_mock_url("/51"),
                         },
                     ],
                 },
@@ -218,12 +217,12 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                     "id": "49",
                     "name": "Huisartsgegevens",
                     "interface_versions": ["2"],
-                    "auth_endpoint": self.__build_mock_url("authorize"),
-                    "token_endpoint": self.__build_mock_url("token"),
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
                     "roles": [
                         {
                             "code": "MM-3.0-HGB-FHIR",
-                            "resource_endpoint": self.__build_mock_url("49"),
+                            "resource_endpoint": self.__build_mock_url("/49"),
                         }
                     ],
                 },
@@ -231,16 +230,16 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                     "id": "51",
                     "name": "Documenten",
                     "interface_versions": ["2"],
-                    "auth_endpoint": self.__build_mock_url("authorize"),
-                    "token_endpoint": self.__build_mock_url("token"),
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
                     "roles": [
                         {
                             "code": "MM-3.0-PLB-FHIR",
-                            "resource_endpoint": self.__build_mock_url("51"),
+                            "resource_endpoint": self.__build_mock_url("/51"),
                         },
                         {
                             "code": "MM-3.0-PDB-FHIR",
-                            "resource_endpoint": self.__build_mock_url("51"),
+                            "resource_endpoint": self.__build_mock_url("/51"),
                         },
                     ],
                 },
@@ -279,12 +278,12 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                     "id": "63",
                     "name": "Vaccinatiegegevens",
                     "interface_versions": ["2"],
-                    "auth_endpoint": self.__build_mock_url("authorize"),
-                    "token_endpoint": self.__build_mock_url("token"),
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
                     "roles": [
                         {
                             "code": "MM-1.0-VAR-FHIR",
-                            "resource_endpoint": self.__build_mock_url("63"),
+                            "resource_endpoint": self.__build_mock_url("/63"),
                         }
                     ],
                 },

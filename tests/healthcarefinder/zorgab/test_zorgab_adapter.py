@@ -110,8 +110,10 @@ def test_search_organizations(
         base_url="https://example.com",
         hydration_service=HydrationService(
             addressing_service=cast(AddressingService, AddressingMockAdapter()),
+            logger=mocker.Mock(spec=Logger),
         ),
         logger=mocker.Mock(Logger),
+        suppress_hydration_errors=False,
     )
     search = SearchRequest(name="foo", city="bar")
 

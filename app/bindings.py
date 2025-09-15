@@ -57,7 +57,9 @@ def __bind_addressing_finder_adapter(binder: Binder, config: Config) -> None:
     if config.app.addressing_adapter == AddressingAdapterType.mock:
         binder.bind_to_constructor(
             AddressingAdapter,
-            lambda: AddressingMockAdapter(sign_endpoints=config.signing.sign_endpoints),
+            lambda: AddressingMockAdapter(
+                sign_endpoints=config.signing.sign_endpoints, mock_base_url=config.app.mock_base_url
+            ),
         )
     elif config.app.addressing_adapter == AddressingAdapterType.zal:
         binder.bind_to_constructor(

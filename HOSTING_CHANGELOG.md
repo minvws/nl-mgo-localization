@@ -2,31 +2,41 @@
 
 ## [NEXT FUTURE RELEASE]
 
-## [0.9.0] - 09-05-2025
+## [0.11.0]
 
 - No changes required
 
-## [0.8.0] - 06-02-2025
+## [0.10.0]
+
+### Changed
+- CONF: `default.mock_base_url`
+    - The app now expects a fully qualified domain without trailing slash. It should be removed if present
+
+## [0.9.0]
 
 - No changes required
 
-## [0.7.1] - 21-01-2025
+## [0.8.0]
 
 - No changes required
 
-## [0.7.0] - 21-01-2025
+## [0.7.1]
 
 - No changes required
 
-## [0.6.0] - 04-12-2024
+## [0.7.0]
 
 - No changes required
 
-## [0.5.2] - 09-10-2024
+## [0.6.0]
 
-## [0.5.1] - 09-10-2024
+- No changes required
 
-## [0.5.0] - 04-10-2024
+## [0.5.2]
+
+## [0.5.1]
+
+## [0.5.0]
 
 ### Added
 - ENV: `logging` section
@@ -43,7 +53,7 @@
 - ENV: `signing.param_name`
     - This value has been hardcoded.
 
-## [0.4.0] - 09-08-2024
+## [0.4.0]
 
 ### Changed
 - ENV: `healthcarefinder.allow_search_bypass`
@@ -54,10 +64,10 @@
 - ENV: `app.healthcare_adapter`
     - The `HealthcareAdapterType.mock_zorgab` has been renamed to `HealthcareAdapterType.mock_zorgab_hydrated`
 
-## [0.3.3] - 26-07-2024
+## [0.3.3]
 No changes required
 
-## [0.3.0] - 23-07-2024
+## [0.3.0]
 
 ### Added
 - ENV: `app.mock_base_url` string
@@ -69,7 +79,7 @@ No changes required
 - `HealthcareFinderAdapter.mock` is now used to generate a "realistic" output for the mock hospital, along with their dataservices
 
 
-## [0.2.0] - 18-06-2024
+## [0.2.0]
 
 ### Added
 - ENV: `app.version`
@@ -83,8 +93,7 @@ The signing.sign_endpoints config setting actually has impact now.
 - ENV: The `signing.param_name` is no longer required when `signing.sign_endpoints` is `False`
 
 
-## [0.1.0] - 17-05-2024
-
+## [0.1.0]
 
 ### Added
 - ENV: [signing] section

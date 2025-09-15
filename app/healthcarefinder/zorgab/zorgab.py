@@ -4,7 +4,6 @@ from logging import Logger
 import requests
 from fhir.resources.STU3.bundle import Bundle, BundleEntry
 from fhir.resources.STU3.organization import Organization as FhirOrganization
-from pydantic import ValidationError
 
 from app.healthcarefinder.models import SearchRequest, SearchResponse
 from app.healthcarefinder.zorgab.hydration_service import HydrationService
@@ -32,6 +31,7 @@ class ZorgABAdapter:
         base_url: str,
         hydration_service: HydrationService,
         logger: Logger,
+        suppress_hydration_errors: bool,
         mtls_cert_file: str | None = None,
         mtls_key_file: str | None = None,
         mtls_chain_file: str | None = None,
@@ -44,6 +44,7 @@ class ZorgABAdapter:
         self.__hydration_service = hydration_service
         self.__logger = logger
         self.__session = requests.Session()
+        self.__suppress_hydration_errors = suppress_hydration_errors
 
         if mtls_chain_file:
             self.__session.verify = mtls_chain_file
@@ -71,8 +72,8 @@ class ZorgABAdapter:
         except ValueError as e:
             self.__logger.error("Error while trying to create a FHIR search: %s", e)
             raise BadSearchParams("No correct search parameters available") from e
-        url = "%s/fhir/Organization" % (self.__base_url)
 
+        url = "%s/fhir/Organization" % (self.__base_url)
         self.__logger.info("Calling external URL: '%s?%s'" % (url, params))
 
         try:
@@ -86,15 +87,21 @@ class ZorgABAdapter:
 
         orgs = []
         bundle = Bundle.model_validate(response.json())
-        if bundle.total > 0:
+
+        if bundle.total and bundle.entry:
             for entry in bundle.entry:
                 try:
                     bundle_entry = BundleEntry.model_validate(entry)
                     fhir_org = FhirOrganization.model_validate(bundle_entry.resource)
                     orgs.append(self.__hydration_service.hydrate_to_organization(fhir_org))
-                except ValidationError as e:
-                    self.__logger.warning("Error while trying to hydrate an organization: %s", e)
-                    continue
+                except Exception as e:
+                    self.__logger.warning(
+                        "Error while trying to hydrate an organization (suppress_hydration_errors=%s)",
+                        self.__suppress_hydration_errors,
+                        exc_info=True,
+                    )
+                    if not self.__suppress_hydration_errors:
+                        raise e
 
         return SearchResponse(organizations=orgs)
 

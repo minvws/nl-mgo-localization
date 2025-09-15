@@ -79,6 +79,7 @@ class SigningConfig(BaseModel):
 
 class HealthcareFinderConfig(BaseModel):
     allow_search_bypass: bool = Field(default=False)
+    suppress_hydration_errors: bool = Field(default=False)
 
 
 class LoggingConfig(BaseModel):

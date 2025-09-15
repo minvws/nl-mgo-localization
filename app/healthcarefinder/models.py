@@ -22,7 +22,6 @@ class Address(BaseModel):
     geolocation: GeoLocation | None = None
     postalcode: str | None = None
     state: str | None = None
-    type: str
 
 
 class Name(BaseModel):
@@ -68,8 +67,8 @@ class SearchType(Enum):
 
 
 class SearchRequest(BaseModel, str_strip_whitespace=True):
-    name: str | None = None
-    city: str | None = None
+    name: str
+    city: str
 
 
 class SearchResponse(BaseModel):

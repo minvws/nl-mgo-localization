@@ -28,6 +28,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
         search = SearchRequest(name=name, city=city)
         assert expected == adapter.create_fhir_search(search)
@@ -50,6 +51,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
         search = SearchRequest(name=name, city=city)
         with pytest.raises(ValueError):
@@ -61,6 +63,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
 
         assert session_init_spy.call_count == 1
@@ -72,6 +75,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=logger,
+            suppress_hydration_errors=False,
         )
 
         response = Response()
@@ -95,6 +99,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=logger,
+            suppress_hydration_errors=False,
         )
 
         request_exception = RequestException("Connection refused")
@@ -115,6 +120,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
 
         with pytest.raises(BadSearchParams):
@@ -125,6 +131,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
 
         response = Response()
@@ -138,6 +145,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
 
         response = Response()
@@ -152,6 +160,7 @@ class TestZorgAb:
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
+            suppress_hydration_errors=False,
         )
 
         request_exception = RequestException("Connection refused")

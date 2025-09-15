@@ -10,7 +10,7 @@ healthcare_adapter=mock
 addressing_adapter=mock
 
 # the url that point to the mock dva server
-mock_base_url=http://localhost:8002/
+mock_base_url=http://localhost:8002
 
 ;[logging]
 ;logger_name=load
@@ -54,3 +54,5 @@ sign_endpoints=True
 ;[healthcarefinder]
 ; When set to True, a predefined search query can force the use of a ZorgAB mock adapter
 ;allow_search_bypass=false
+; When set to true, hydration errors will be suppressed instead of being raised.
+;suppress_hydration_errors=false

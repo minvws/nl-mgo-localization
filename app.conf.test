@@ -4,7 +4,7 @@
 healthcare_adapter=zorgab
 # Adapter to use to fetch addressing data (mock | zal)
 addressing_adapter=zal
-mock_base_url=https://mock/
+mock_base_url=https://mock
 
 # Logging level of the application
 [logging]

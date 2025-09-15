@@ -29,13 +29,16 @@ class TestAddressingMockAdapter:
     ) -> None:
         search_value = faker.company()
         signature = faker.hexify(faker.text())
+        mock_base_url = faker.uri()
 
         signing_query_string = f"{SIGNATURE_PARAM_NAME}={signature}"
 
         signing_service = mocker.Mock(SigningService)
         signing_service.sign_endpoint.side_effect = lambda endpoint: f"{endpoint}?{signing_query_string}"
 
-        mock_adapter = AddressingMockAdapter(sign_endpoints=True, signing_service=signing_service)
+        mock_adapter = AddressingMockAdapter(
+            sign_endpoints=True, mock_base_url=mock_base_url, signing_service=signing_service
+        )
         entry: ZalSearchResponseEntry = search_method(mock_adapter, search_value)
 
         signing_service.sign_endpoint.assert_called()
@@ -68,10 +71,13 @@ class TestAddressingMockAdapter:
         mocker: MockerFixture,
     ) -> None:
         search_value = faker.company()
+        mock_base_url = faker.uri()
 
         signing_service = mocker.Mock(SigningService)
 
-        mock_adapter = AddressingMockAdapter(sign_endpoints=False, signing_service=signing_service)
+        mock_adapter = AddressingMockAdapter(
+            sign_endpoints=False, mock_base_url=mock_base_url, signing_service=signing_service
+        )
         search_method(mock_adapter, search_value)
 
         signing_service.sign_endpoint.assert_not_called()
