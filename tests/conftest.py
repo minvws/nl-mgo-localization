@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.db import Database
-from app.db.db_session import DbSession
 from app.db.repositories import (
     DataServiceRepository,
     EndpointRepository,
@@ -34,8 +33,8 @@ def db_wrapper(test_client: TestClient) -> Generator[Database, None, None]:
 
 
 @pytest.fixture(scope="function")
-def db_session(db_wrapper: Database) -> Generator[DbSession, None, None]:
-    session = db_wrapper.get_db_session()
+def db_session(db_wrapper: Database) -> Generator[Session, None, None]:
+    session = Session(db_wrapper.engine)
     yield session
     session.rollback()
     session.close()
@@ -51,24 +50,29 @@ def anyio_backend() -> str:
 
 @pytest.fixture(scope="function")
 def organisation_repository(db_session: Session) -> OrganisationRepository:
-    return OrganisationRepository(db_session)
+    repository: OrganisationRepository = OrganisationRepository(db_session)
+    return repository
 
 
 @pytest.fixture(scope="function")
 def identifying_feature_repository(db_session: Session) -> IdentifyingFeatureRepository:
-    return IdentifyingFeatureRepository(db_session)
+    repository: IdentifyingFeatureRepository = IdentifyingFeatureRepository(db_session)
+    return repository
 
 
 @pytest.fixture(scope="function")
 def data_service_repository(db_session: Session) -> DataServiceRepository:
-    return DataServiceRepository(db_session)
+    repository: DataServiceRepository = DataServiceRepository(db_session)
+    return repository
 
 
 @pytest.fixture(scope="function")
 def system_role_repository(db_session: Session) -> SystemRoleRepository:
-    return SystemRoleRepository(db_session)
+    repository: SystemRoleRepository = SystemRoleRepository(db_session)
+    return repository
 
 
 @pytest.fixture(scope="function")
 def endpoint_repository(db_session: Session) -> EndpointRepository:
-    return EndpointRepository(db_session)
+    repository: EndpointRepository = EndpointRepository(db_session)
+    return repository

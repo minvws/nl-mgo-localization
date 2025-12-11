@@ -48,7 +48,7 @@ To install and run this application we assume you have to following installed or
 
 1. [Docker](https://docs.docker.com/get-started/get-docker/) and [Docker Compose](https://docs.docker.com/compose/).
 2. [Make](https://www.gnu.org/software/make/)
-
+3. [pre-commit](https://pre-commit.com/) (recommended to validate commit messages — see [Commit Guidelines](CONTRIBUTING.md#commit-guidelines) for setup and usage)
 
 When you're ready, build your application by running:
 `make container-build`.
@@ -69,44 +69,6 @@ To execute the commands inside Docker, set the `DOCKER` variable when running ma
 ```bash
 DOCKER=1 make test
 ```
-
-## Visual Studio Code (VCS)
-
-This repository includes support for development using Visual Studio dev-containers. It is however not a required way of working.
-
-### Shared workspace files
-
-This repository contains shared configuration files which automates the setup of your workspace.
-
-The configuration files reside in the the `./.vscode` folder.
-
-VCS will detect this folder automatically and will recommend you to install several extensions. It is advised to install all of them as it will be a good starting point for this project.
-
-### Developing inside a Container
-
-Once you have installed all the extensions, VSC may detect a Dev Container configuration file, and hence ask you to reopen the folder to develop in a container.
-
-This feature is enabled by the Dev Container extension. It allows you to use a container as a full-featured development environment, providing a better development experience, including auto completions, code navigation, and debugging.
-
-### Version Control in Dev Container
-
-To be able to use VS Code Source Control while in a Dev Container, both git and gnupg are installed. Dev Containers have out-of-the-box support for this, however it does require a running `ssh-agent` daemon with the appropriate identity added to it when booting the Dev Container.
-
-You can access your GPG key from within the Dev Container to sign commits and usually VS Code will copy your local `~/.ssh/known_hosts` to the Dev Container.
-The latter is sometimes omitted for unknown reasons, in which case an error might be raised upon storing Github's fingerprint when first connecting.
-To fix it, simply manually create an empty `known_hosts` file inside the container.
-
-```
-touch ~/.ssh/known_hosts
-```
-
-Please refer to the VS Code documentation for more OS-specific explanations.
-
-### References
-* [FastAPI guide](https://fastapi.tiangolo.com/)
-* [Visual Studio Code: Developing inside a Container](https://code.visualstudio.com/docs/devcontainers/containers)
-* [Visual Studio Code: Sharing Git credentials with your container](https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials)
-
 
 ## TLS support
 It's possible to run the server on SSL/TLS. You can generate a self-signed certificate for this with the following command:

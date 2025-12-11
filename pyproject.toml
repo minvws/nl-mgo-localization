@@ -12,33 +12,33 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.11"
-uvicorn = "^0.35.0"
-fastapi = "^0.116.0"
-pydantic-settings = "^2.10.1"
-sqlalchemy = "^2.0.41"
-psycopg = {extras = ["binary", "pool"], version = "^3.2.9"}
+uvicorn = "^0.38.0"
+fastapi = "^0.122.0"
+pydantic-settings = "^2.12.0"
+sqlalchemy = "^2.0.44"
+psycopg = {extras = ["binary", "pool"], version = "^3.2.13"}
 inject = "^5.3.0"
-xmltodict = "^0.14.2"
-requests = "^2.32.4"
-fhir-resources = "^8.0.0"
-cryptography = "^45.0.5"
-orjson = "^3.10.18"
+xmltodict = "^1.0.2"
+requests = "^2.32.5"
+fhir-resources = "^8.1.0"
+cryptography = "^46.0.3"
+orjson = "^3.11.4"
 defusedxml = "^0.7.1"
-lxml = "^6.0.0"
+lxml = "^6.0.2"
 pytest-watcher = "^0.4.3"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.4.1"
-pytest-cov = "^6.2.1"
+pytest = "^9.0.1"
+pytest-cov = "^7.0.0"
 httpx = "^0.28.1"
-ruff = "^0.12.4"
+ruff = "^0.14.6"
 codespell = "^2.4.1"
-faker = "^37.4.2"
-pytest-mock = "^3.14.1"
+faker = "^38.2.0"
+pytest-mock = "^3.15.1"
 types-requests = "^2.32.4"
-mypy = "^1.17.0"
+mypy = "^1.18.2"
 pytest-watcher = "^0.4.3"
-types-defusedxml = "^0.7.0.20250708"
+types-defusedxml = "^0.7.0.20250822"
 
 [build-system]
 requires = ["poetry-core"]
@@ -67,10 +67,6 @@ files = "app,tests"
 python_version = "3.12"
 strict = true
 cache_dir = "~/.cache/mypy"
-
-[[tool.mypy.overrides]]
-module = "fhir.resources.*"
-follow_untyped_imports = true
 
 [tool.pytest.ini_options]
 cache_dir = "~/.cache/pytest"

@@ -22,10 +22,10 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install dependencies
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@1279864d6bfc79a6ac2666846cdb00c08ab6593f
+              uses: minvws/action-python-poetry-install@v1
               with:
                 python_version: ${{ env.PYTHON_VERSION }}
 
@@ -38,10 +38,10 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install dependencies
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@1279864d6bfc79a6ac2666846cdb00c08ab6593f
+              uses: minvws/action-python-poetry-install@v1
               with:
                 python_version: ${{ env.PYTHON_VERSION }}
 
@@ -54,10 +54,10 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install dependencies
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@1279864d6bfc79a6ac2666846cdb00c08ab6593f
+              uses: minvws/action-python-poetry-install@v1
               with:
                 python_version: ${{ env.PYTHON_VERSION }}
 
@@ -70,10 +70,10 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install dependencies
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@1279864d6bfc79a6ac2666846cdb00c08ab6593f
+              uses: minvws/action-python-poetry-install@v1
               with:
                 python_version: ${{ env.PYTHON_VERSION }}
 
@@ -86,10 +86,10 @@ jobs:
 
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
 
             - name: Install dependencies
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/poetry-install@1279864d6bfc79a6ac2666846cdb00c08ab6593f
+              uses: minvws/action-python-poetry-install@v1
               with:
                 python_version: ${{ env.PYTHON_VERSION }}
 
@@ -99,7 +99,7 @@ jobs:
               run: poetry run $(make test --just-print --silent)
 
             - name: Upload coverage report
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v5
               with:
                   name: coverage
                   path: coverage.xml
@@ -110,13 +110,14 @@ jobs:
         needs: test
         steps:
             - name: Checkout repository
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                   fetch-depth: 0
             - name: Download coverage report
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v6
 
-            - name: Run SonarCloud scanner
-              uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/sonarcloud@main
+            - name: Run SonarQube scan
+              uses: minvws/action-sonarqube@v1
               with:
                   sonar-token: ${{ secrets.SONAR_TOKEN }}
+                  allow-run-on-dependabot: 'true'

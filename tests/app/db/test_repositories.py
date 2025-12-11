@@ -2,21 +2,18 @@ import json
 from base64 import b64encode
 from datetime import datetime
 from os import urandom
-from typing import Generator, List
+from typing import List
 
 from faker import Faker
-from pytest import fixture, mark
+from pytest import mark
 
-from app.db.models import Base, DataService, Endpoint, IdentifyingFeature, Organisation
+from app.db.models import DataService, Endpoint, IdentifyingFeature, Organisation
 from app.db.repositories import (
-    BaseRepository,
     DataServiceRepository,
     EndpointRepository,
     IdentifyingFeatureRepository,
     OrganisationRepository,
     SystemRoleRepository,
-    repository,
-    repository_registry,
 )
 from app.zal_importer.enums import IdentifyingFeatureType, OrganisationType
 
@@ -545,22 +542,3 @@ class TestEndpointRepository:
         results = endpoint_repository.find_all()
 
         assert len(results) == 3
-
-
-class TestRepositoryDecorator:
-    @fixture(autouse=True)
-    def reset_repository_registry(self) -> Generator[None, None, None]:
-        original_registry = dict(repository_registry)
-        yield
-        repository_registry.clear()
-        repository_registry.update(original_registry)
-
-    def test_repository_decorator_registers_correctly(self) -> None:
-        class MockRepository(BaseRepository):
-            pass
-
-        @repository(Base)
-        class TestRepo(MockRepository):
-            pass
-
-        assert repository_registry.get(Base) == TestRepo

@@ -9,21 +9,22 @@ from app.addressing.models import (
     ZalSearchResponseEntry,
 )
 from app.addressing.schemas import SignedUrl
-from app.db.db import Database
-from app.db.models import DataService, Endpoint, Organisation
+from app.db.models import Endpoint, Organisation
 from app.db.repositories import DataServiceRepository, OrganisationRepository
 from app.zal_importer.enums import IdentifyingFeatureType
 
 
 class AddressingZalAdapter:
-    @inject.autoparams("db")
-    def __init__(self, db: Database, sign_endpoints: bool) -> None:
-        self.__db = db
+    @inject.autoparams()
+    def __init__(
+        self,
+        organisation_repository: OrganisationRepository,
+        data_service_repository: DataServiceRepository,
+        sign_endpoints: bool,
+    ) -> None:
+        self.organisation_repository = organisation_repository
+        self.data_service_repository = data_service_repository
         self.__should_sign_endpoints = sign_endpoints
-
-        session = self.__db.get_db_session()
-        self.organisation_repository: OrganisationRepository = session.get_repository(Organisation)
-        self.data_service_repository: DataServiceRepository = session.get_repository(DataService)
 
     def search_by_medmij_name(self, name: str) -> ZalSearchResponseEntry | None:
         entry = self.organisation_repository.find_one_by_name(name)

@@ -4,7 +4,6 @@ import inject
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from app.db.db_session import DbSession
 from app.db.models import Base
 
 
@@ -45,6 +44,3 @@ class Database:
         except Exception as e:
             self.__logger.info("Database is not healthy: %s", e)
             return False
-
-    def get_db_session(self) -> DbSession:
-        return DbSession(self.engine)

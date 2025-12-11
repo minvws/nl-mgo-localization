@@ -4,8 +4,6 @@ import pytest
 from fastapi.testclient import TestClient
 from pytest_mock import MockerFixture, MockType
 
-from app.db.db import Database
-from app.db.db_session import DbSession
 from app.zal_importer.services import ExpiredImportsCleaner
 
 MocksTypeAlias: TypeAlias = tuple[ExpiredImportsCleaner, MockType]
@@ -14,14 +12,14 @@ MocksTypeAlias: TypeAlias = tuple[ExpiredImportsCleaner, MockType]
 class TestExpiredImportsCleaner:
     @pytest.fixture
     def mocks(self, mocker: MockerFixture) -> MocksTypeAlias:
-        mock_db = mocker.Mock(spec=Database)
-        mock_db_session = mocker.Mock(spec=DbSession)
-        mock_db.get_db_session.return_value = mock_db_session
+        mock_logger = mocker.Mock()
         mock_organisation_repository = mocker.Mock()
-        mock_db_session.get_repository.return_value = mock_organisation_repository
 
         return (
-            ExpiredImportsCleaner(db=mock_db),
+            ExpiredImportsCleaner(
+                organisation_repository=mock_organisation_repository,
+                logger=mock_logger,
+            ),
             mock_organisation_repository,
         )
 

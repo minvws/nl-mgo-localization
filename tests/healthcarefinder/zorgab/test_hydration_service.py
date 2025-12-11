@@ -164,7 +164,7 @@ def test_hydrate_to_organization_missing_address(
     assert isinstance(org.data_services[0], ZalDataServiceResponse)
 
 
-def test_hydrate_to_organization_temporarily_uses_random_uuid_for_missing_identifier(
+def test_hydrate_to_organization_uses_random_uuid_for_missing_identifier(
     mocker: MockerFixture,
     faker: Faker,
     create_fhir_organization_without_identifier: FhirOrganization,
@@ -177,19 +177,14 @@ def test_hydrate_to_organization_temporarily_uses_random_uuid_for_missing_identi
 
     random_uuid = faker.uuid4()
     mocker.patch("app.healthcarefinder.zorgab.hydration_service.uuid4", return_value=random_uuid)
-    mock_logger = mocker.Mock(spec=Logger)
     hydration_service = HydrationService(
         addressing_service=cast(AddressingService, addressing_mock_adapter),
-        logger=mock_logger,
+        logger=mocker.Mock(spec=Logger),
     )
 
     org = hydration_service.hydrate_to_organization(create_fhir_organization_without_identifier)
 
     assert org.identification == random_uuid
-    mock_logger.warning.assert_called_once_with(
-        "No identifier found in FHIR Organization. Generated random uuid '%s' for identifier to avoid a crash.",
-        random_uuid,
-    )
 
 
 def test_hydrate_to_organization_no_matching_organization(

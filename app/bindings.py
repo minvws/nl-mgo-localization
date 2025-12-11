@@ -2,6 +2,9 @@ import logging
 
 import inject
 from inject import Binder
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
+
+from app.zal_importer.importers import OrganisationListImporter
 
 from .addressing.addressing_service import AddressingAdapter
 from .addressing.mock.mock_adapter import AddressingMockAdapter
@@ -19,7 +22,6 @@ from .healthcarefinder.zorgab_mock.zorgab_mock import ZorgABMockHydrationAdapter
 from .logger.factory import create_logger
 from .version.models import VersionInfo
 from .version.services import read_version_info
-from .zal_importer.importers import OrganisationListImporter
 
 
 def configure_bindings(binder: Binder, config: Config) -> None:
@@ -50,7 +52,14 @@ def __bind_logger(binder: Binder, config: Config) -> logging.Logger:
 
 
 def __bind_db(binder: Binder, app_config: Config) -> None:
-    binder.bind_to_constructor(Database, lambda: Database(dsn=app_config.database.dsn))
+    database = Database(dsn=app_config.database.dsn, logger=create_logger(app_config))
+    binder.bind(Database, database)
+
+    session_factory = sessionmaker(bind=database.engine)
+    # scoped_session helps manage connections, transactions, and handles cleanup automatically.
+    scoped_session_factory = scoped_session(session_factory)
+
+    binder.bind(Session, scoped_session_factory)
 
 
 def __bind_addressing_finder_adapter(binder: Binder, config: Config) -> None:

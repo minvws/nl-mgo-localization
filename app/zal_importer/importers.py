@@ -6,17 +6,11 @@ from typing import Any
 from xml.etree.ElementTree import Element
 
 import inject
+from sqlalchemy.orm import Session
 
 from app.addressing.signing_service import SigningService
 from app.cron.utils import print_progress_bar
-from app.db.db import Database
-from app.db.models import (
-    DataService,
-    Endpoint,
-    IdentifyingFeature,
-    Organisation,
-    SystemRole,
-)
+from app.db.models import Organisation
 from app.db.repositories import (
     DataServiceRepository,
     EndpointRepository,
@@ -44,16 +38,24 @@ class OrganisationImporter(ABC):
 
 
 class OrganisationListImporter(OrganisationImporter):
-    @inject.autoparams("db", "logger")
-    def __init__(self, db: Database, logger: Logger, signing_service: SigningService | None = None) -> None:
-        self.__db = db
+    @inject.autoparams()
+    def __init__(
+        self,
+        organisation_repository: OrganisationRepository,
+        data_service_repository: DataServiceRepository,
+        system_role_repository: SystemRoleRepository,
+        endpoint_repository: EndpointRepository,
+        session: Session,
+        logger: Logger,
+        signing_service: SigningService | None = None,
+    ) -> None:
+        self.__organisation_repository = organisation_repository
+        self.__data_service_repository = data_service_repository
+        self.__system_role_repository = system_role_repository
+        self.__endpoint_repository = endpoint_repository
+        self.__session = session
         self.__logger = logger
         self.__signing_service = signing_service
-        self.__session = self.__db.get_db_session()
-        self.__organisation_repository: OrganisationRepository = self.__session.get_repository(Organisation)
-        self.__data_service_repository: DataServiceRepository = self.__session.get_repository(DataService)
-        self.__system_role_repository: SystemRoleRepository = self.__session.get_repository(SystemRole)
-        self.__endpoint_repository: EndpointRepository = self.__session.get_repository(Endpoint)
 
     def process_xml(self, traverser: ElementTraverser) -> None:
         import_reference = self._create_import_reference(traverser)
@@ -65,11 +67,12 @@ class OrganisationListImporter(OrganisationImporter):
 
         try:
             self.__process_xml(traverser, import_reference)
+            self.__session.commit()
+            self.__logger.info("Successfully imported data with reference = %s", import_reference)
         except Exception as e:
             self.__session.rollback()
+            self.__logger.error("Failed to import data with reference = %s: %s", import_reference, e)
             raise e
-
-        self.__session.commit()
 
     def __process_xml(self, traverser: ElementTraverser, import_reference: str) -> None:
         elements = traverser.get_nested_elements(name="Zorgaanbieders/Zorgaanbieder")
@@ -139,15 +142,19 @@ class OrganisationListImporter(OrganisationImporter):
 
 class OrganisationJoinListImporter(OrganisationImporter):
     @inject.autoparams()
-    def __init__(self, db: Database, logger: Logger) -> None:
-        self.__db = db
-        self.__session = self.__db.get_db_session()
+    def __init__(
+        self,
+        organisation_repository: OrganisationRepository,
+        data_service_repository: DataServiceRepository,
+        identifying_feature_repository: IdentifyingFeatureRepository,
+        session: Session,
+        logger: Logger,
+    ) -> None:
+        self.__organisation_repository = organisation_repository
+        self.__data_service_repository = data_service_repository
+        self.__identifying_feature_repository = identifying_feature_repository
+        self.__session = session
         self.__logger = logger
-        self.__organisation_repository: OrganisationRepository = self.__session.get_repository(Organisation)
-        self.__data_service_repository: DataServiceRepository = self.__session.get_repository(DataService)
-        self.__identifying_feature_repository: IdentifyingFeatureRepository = self.__session.get_repository(
-            IdentifyingFeature
-        )
 
     def process_xml(self, traverser: ElementTraverser) -> None:
         import_reference = self._create_import_reference(traverser)
@@ -159,11 +166,12 @@ class OrganisationJoinListImporter(OrganisationImporter):
 
         try:
             self.__process_xml(traverser, import_reference)
+            self.__session.commit()
+            self.__logger.info("Successfully imported data with reference = %s", import_reference)
         except Exception as e:
             self.__session.rollback()
+            self.__logger.error("Failed to import data with reference = %s: %s", import_reference, e)
             raise e
-
-        self.__session.commit()
 
     def __process_xml(self, traverser: ElementTraverser, import_reference: str) -> None:
         elements = traverser.get_nested_elements(name="Zorgaanbieders/Zorgaanbieder")

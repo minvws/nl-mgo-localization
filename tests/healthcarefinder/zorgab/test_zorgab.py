@@ -70,6 +70,11 @@ class TestZorgAb:
 
     def test_incorrect_status_code(self, mocker: MockerFixture) -> None:
         logger = mocker.Mock(Logger)
+        mock_session = mocker.Mock()
+        response = Response()
+        response.status_code = 418
+        mock_session.get.return_value = response
+        mocker.patch("requests.Session", return_value=mock_session)
 
         adapter = ZorgABAdapter(
             "https://example.org",
@@ -78,22 +83,20 @@ class TestZorgAb:
             suppress_hydration_errors=False,
         )
 
-        response = Response()
-        response.status_code = 418
-        session_mock = mocker.Mock(spec=Session)
-        session_mock.get = mocker.Mock(return_value=response)
-
         with pytest.raises(ApiError) as exception_info:
             adapter.search_organizations(SearchRequest(name="foo", city="bar"))
 
         assert "Unexpected status code" in str(exception_info.value)
-
         logger.error.assert_any_call(
             "Incorrect status code returned from ZorgAB API: 'https://example.org/fhir/Organization'"
         )
 
     def test_connection_error(self, mocker: MockerFixture) -> None:
         logger = mocker.Mock(Logger)
+        mock_session = mocker.Mock()
+        request_exception = RequestException("Connection refused")
+        mock_session.get.side_effect = request_exception
+        mocker.patch("requests.Session", return_value=mock_session)
 
         adapter = ZorgABAdapter(
             "https://example.org",
@@ -102,14 +105,10 @@ class TestZorgAb:
             suppress_hydration_errors=False,
         )
 
-        request_exception = RequestException("Connection refused")
-        mocker.patch("requests.Session.get", side_effect=request_exception)
-
         with pytest.raises(ApiError) as exception_info:
             adapter.search_organizations(SearchRequest(name="foo", city="bar"))
 
         assert "Error while trying to call" in str(exception_info.value)
-
         logger.error.assert_any_call(
             "Error while trying to call the external ZorgAB API: %s",
             request_exception,
@@ -127,44 +126,48 @@ class TestZorgAb:
             adapter.search_organizations(SearchRequest(name="", city=""))
 
     def test_verify_connection_success(self, mocker: MockerFixture) -> None:
+        mock_session = mocker.Mock()
+        response = Response()
+        response.status_code = 200
+        mock_session.get.return_value = response
+        mocker.patch("requests.Session", return_value=mock_session)
+
         adapter = ZorgABAdapter(
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
             suppress_hydration_errors=False,
         )
-
-        response = Response()
-        response.status_code = 200
-        mocker.patch("requests.Session.get", return_value=response)
 
         assert adapter.verify_connection() is True
 
     def test_verify_connection_failure(self, mocker: MockerFixture) -> None:
+        mock_session = mocker.Mock()
+        response = Response()
+        response.status_code = 404
+        mock_session.get.return_value = response
+        mocker.patch("requests.Session", return_value=mock_session)
+
         adapter = ZorgABAdapter(
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
             suppress_hydration_errors=False,
         )
-
-        response = Response()
-        response.status_code = 404
-        session_mock = mocker.Mock(spec=Session)
-        session_mock.get = mocker.Mock(return_value=response)
 
         assert adapter.verify_connection() is False
 
     def test_verify_connection_request_exception(self, mocker: MockerFixture) -> None:
+        mock_session = mocker.Mock()
+        request_exception = RequestException("Connection refused")
+        mock_session.get.side_effect = request_exception
+        mocker.patch("requests.Session", return_value=mock_session)
+
         adapter = ZorgABAdapter(
             "https://example.org",
             hydration_service=mocker.Mock(),
             logger=mocker.Mock(Logger),
             suppress_hydration_errors=False,
         )
-
-        request_exception = RequestException("Connection refused")
-        session_mock = mocker.Mock(spec=Session)
-        session_mock.get = mocker.Mock(side_effect=request_exception)
 
         assert adapter.verify_connection() is False

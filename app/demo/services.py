@@ -47,6 +47,9 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
         organizations.append(
             self.create_organization(self.get_apothecary_data()),
         )
+        organizations.append(
+            self.create_organization(self.get_tante_bianca_data()),
+        )
 
         return SearchResponse(organizations=organizations)
 
@@ -344,4 +347,46 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                 }
             ],
             "data_services": [],
+        }
+
+    def get_tante_bianca_data(self) -> dict[str, Any]:
+        return {
+            "display_name": "Tante Bianca",
+            "identification_type": "demo",
+            "identification_value": "333333",
+            "addresses": [
+                {
+                    "active": True,
+                    "address": "Tantestraat 42\r\n1030CD Utrecht",
+                    "city": "Utrecht",
+                    "country": "Nederland",
+                    "geolocation": {"latitude": 52.0907, "longitude": 5.1214},
+                    "postalcode": "1030CD",
+                    "state": None,
+                    "type": "physical",
+                }
+            ],
+            "names": [{"full_name": "Tante Bianca", "preferred": True}],
+            "types": [
+                {
+                    "code": "0300",
+                    "display_name": "Zorgverlener",
+                    "type": "organization",
+                }
+            ],
+            "data_services": [
+                {
+                    "id": "61",
+                    "name": "Basisgegevens Langdurige Zorg",
+                    "interface_versions": ["2"],
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
+                    "roles": [
+                        {
+                            "code": "MM-3.0-LZB-FHIR",
+                            "resource_endpoint": self.__build_mock_url("/61"),
+                        }
+                    ],
+                },
+            ],
         }

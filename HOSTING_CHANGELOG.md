@@ -2,6 +2,18 @@
 
 ## [NEXT FUTURE RELEASE]
 
+## [0.14.0]
+
+- No changes required
+
+## [0.13.0]
+
+- No changes required
+
+## [0.12.0]
+
+- No changes required
+
 ## [0.11.0]
 
 - No changes required

@@ -112,6 +112,19 @@ class HealthOrganizationFixtures:
                 ],
             },
             {
+                "id": "50",
+                "name": "Basisgegevens GGZ",
+                "interface_versions": ["2"],
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
+                "roles": [
+                    {
+                        "code": "MM-2.0-GGB-FHIR",
+                        "resource_endpoint": "{{MOCK_URL}}/50",
+                    },
+                ],
+            },
+            {
                 "id": "51",
                 "name": "Documenten",
                 "interface_versions": ["2"],
@@ -126,6 +139,19 @@ class HealthOrganizationFixtures:
                         "code": "MM-3.0-PDB-FHIR",
                         "resource_endpoint": "{{MOCK_URL}}/51",
                     },
+                ],
+            },
+            {
+                "id": "61",
+                "name": "Basisgegevens langdurige zorg",
+                "interface_versions": ["1.5.0", "1.6.0", "2."],
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
+                "roles": [
+                    {
+                        "code": "MM-3.0-LZB-FHIR",
+                        "resource_endpoint": "{{MOCK_URL}}/61",
+                    }
                 ],
             },
         ],
@@ -307,6 +333,20 @@ class QualificationDataServiceFixtures(Enum):
         ],
     }
 
+    BGLZ = {
+        "id": "61",
+        "name": "Basisgegevens langdurige zorg",
+        "interface_versions": ["1.5.0", "1.6.0", "2."],
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
+        "roles": [
+            {
+                "code": "MM-3.0-LZB-FHIR",
+                "resource_endpoint": "{{MOCK_URL}}/61",
+            }
+        ],
+    }
+
     VACCINATION_IMMUNIZATION = {
         "id": "63",
         "name": "Vaccinaties",
@@ -318,6 +358,20 @@ class QualificationDataServiceFixtures(Enum):
                 "code": "MM-1.0-VAB-FHIR",
                 "resource_endpoint": "{{MOCK_URL}}/63",
             }
+        ],
+    }
+
+    BGGZ = {
+        "id": "50",
+        "name": "Basisgegevens GGZ",
+        "interface_versions": ["2"],
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
+        "roles": [
+            {
+                "code": "MM-2.0-GGB-FHIR",
+                "resource_endpoint": "{{MOCK_URL}}/50",
+            },
         ],
     }
 

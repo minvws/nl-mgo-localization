@@ -13,8 +13,11 @@ jobs:
   venv-package:
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Build venv package
-        uses: minvws/nl-irealisatie-generic-pipelines/.github/actions/python-venv-package@1279864d6bfc79a6ac2666846cdb00c08ab6593f
+        uses: minvws/action-python-venv-package@v1
         with:
           python_version: ${{ env.PYTHON_VERSION }}
           package_file_name: ${{ env.PACKAGE_FILE_NAME }}
@@ -23,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Build source package
         uses: ./.github/actions/src-package

@@ -1,9 +1,8 @@
 from logging import Logger
 
 import inject
+from sqlalchemy.orm import Session
 
-from app.db.db import Database
-from app.db.models import Endpoint
 from app.db.repositories import EndpointRepository
 
 from .schemas import EndpointSignatureRenewResultDTO
@@ -12,9 +11,11 @@ from .signing_service import SigningService
 
 class EndpointSignatureRenewer:
     @inject.autoparams()
-    def __init__(self, db: Database, signing_service: SigningService, logger: Logger):
-        self.__db_session = db.get_db_session()
-        self.__endpoint_repository: EndpointRepository = self.__db_session.get_repository(Endpoint)
+    def __init__(
+        self, endpoint_repository: EndpointRepository, session: Session, signing_service: SigningService, logger: Logger
+    ):
+        self.__endpoint_repository = endpoint_repository
+        self.__session = session
         self.__signing_service = signing_service
         self.__logger = logger
 
@@ -39,6 +40,6 @@ class EndpointSignatureRenewer:
             else:
                 result.increment_added()
 
-        self.__db_session.commit()
+        self.__session.commit()
 
         return result

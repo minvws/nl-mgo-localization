@@ -1,39 +1,21 @@
 import json
-from typing import Any, Callable, List, TypeVar
+from typing import Any, List
 
+import inject
 from sqlalchemy import ScalarSelect
 from sqlalchemy.orm import Session
 
 from app.zal_importer.enums import IdentifyingFeatureType, OrganisationType
 
-from .models import Base, DataService, Endpoint, IdentifyingFeature, Organisation, SystemRole
+from .models import DataService, Endpoint, IdentifyingFeature, Organisation, SystemRole
 
 
 class BaseRepository:
+    @inject.autoparams()
     def __init__(self, session: Session):
         self._session = session
 
 
-T = TypeVar("T", bound=type[BaseRepository])
-
-repository_registry: dict[type[Base], type[BaseRepository]] = {}
-
-
-def repository(model_class: type[Base]) -> Callable[[T], T]:
-    def decorator(repo_class: T) -> T:
-        """
-        Decorator to register a repository for a model class
-
-        :param repo_class:
-        :return:
-        """
-        repository_registry[model_class] = repo_class
-        return repo_class
-
-    return decorator
-
-
-@repository(Organisation)
 class OrganisationRepository(BaseRepository):
     def create(
         self,
@@ -113,7 +95,6 @@ class OrganisationRepository(BaseRepository):
         )
 
 
-@repository(DataService)
 class DataServiceRepository(BaseRepository):
     def create(
         self,
@@ -156,7 +137,6 @@ class DataServiceRepository(BaseRepository):
         return self._session.query(DataService).filter_by(organisation_id=organisation_id).all()
 
 
-@repository(SystemRole)
 class SystemRoleRepository(BaseRepository):
     def create(
         self,
@@ -181,7 +161,6 @@ class SystemRoleRepository(BaseRepository):
         return system_role
 
 
-@repository(IdentifyingFeature)
 class IdentifyingFeatureRepository(BaseRepository):
     def create(
         self,
@@ -211,7 +190,6 @@ class IdentifyingFeatureRepository(BaseRepository):
         return self._session.query(IdentifyingFeature).filter_by(import_ref=import_ref).first() is not None
 
 
-@repository(Endpoint)
 class EndpointRepository(BaseRepository):
     def create(
         self,

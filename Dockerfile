@@ -3,7 +3,7 @@
 
 ARG PYTHON_VERSION=3.11
 
-FROM python:${PYTHON_VERSION}-slim AS base
+FROM python:${PYTHON_VERSION}-slim-bookworm AS base
 
 ARG PROJECT_DIR="/src"
 ARG APP_USER="app"
@@ -31,7 +31,7 @@ RUN apt update && \
         gnupg2 \
         make \
         vim \
-        postgresql-client-15 \
+        postgresql-client \
         postgresql-client-common
 
 RUN pip3 install --upgrade pip && \

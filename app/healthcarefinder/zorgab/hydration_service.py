@@ -53,12 +53,8 @@ class HydrationService:
         data_service_entry = None
 
         if fhir_org.identifier is None:
-            # fallback to a random uuid (temporary fix to avoid a crash in the api):
+            # Fallback to a random UUID (the clients expect an identifier that is not present in the FHIR response):
             random_uuid = str(uuid4())
-            self.__logger.warning(
-                "No identifier found in FHIR Organization. Generated random uuid '%s' for identifier to avoid a crash.",
-                random_uuid,
-            )
             return data_service_entry, random_uuid
 
         for obj in fhir_org.identifier:
