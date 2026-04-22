@@ -9,15 +9,20 @@ from app.zal_importer.importers import (
     OrganisationJoinListImporter,
     OrganisationListImporter,
 )
+from tests.utils import configure_bindings
 
 
 class TestImporterFactory:
-    def test_create_importer_returns_organisation_list_importer(self, mocker: MockerFixture) -> None:
+    def test_create_importer_returns_organisation_list_importer(self) -> None:
+        configure_bindings()
+
         importer = OrganisationImporterFactory.create_importer(ImportType.LIST)
 
         assert isinstance(importer, OrganisationListImporter)
 
-    def test_create_importer_returns_organisation_join_list_importer(self, mocker: MockerFixture) -> None:
+    def test_create_importer_returns_organisation_join_list_importer(self) -> None:
+        configure_bindings()
+
         importer = OrganisationImporterFactory.create_importer(ImportType.JOIN_LIST)
 
         assert isinstance(importer, OrganisationJoinListImporter)

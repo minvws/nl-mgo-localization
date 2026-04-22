@@ -1,0 +1,46 @@
+{
+    "resourceType": "Bundle",
+    "type": "searchset",
+    "total": 1,
+    "entry": [
+        {
+            "resource": {
+                "resourceType": "Organization",
+                "id": "scenario-geolocation",
+                "name": "Scenario: with geolocation",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/agb-z",
+                        "value": "99999999"
+                    }
+                ],
+                "address": [
+                    {
+                        "city": "Rotterdam",
+                        "postalCode": "3000 AA",
+                        "line": [
+                            "Geostraat 1"
+                        ],
+                        "type": "physical",
+                        "use": "work",
+                        "extension": [
+                            {
+                                "url": "http://hl7.org/fhir/StructureDefinition/geolocation",
+                                "extension": [
+                                    {
+                                        "url": "latitude",
+                                        "valueDecimal": 155000.0
+                                    },
+                                    {
+                                        "url": "longitude",
+                                        "valueDecimal": 463000.0
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

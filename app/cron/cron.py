@@ -1,27 +1,34 @@
 import argparse
 import logging
-from logging import Logger
-from typing import Any, Protocol, Type
+from typing import Protocol, Type
 
 import inject
 
 from app.bindings import configure_bindings
 from app.config.factories import get_config
-from app.cron.commands import CleanupExpiredImportedOrganisationsCommand, EndpointSignatureRenewCommand
+from app.cron.commands.commands import CleanupExpiredImportedOrganisationsCommand
+from app.cron.commands.normalization_command import NormalizationCommand
+from app.cron.commands.update_search_index_command import UpdateSearchIndexCommand
+from app.cron.utils import SubParsers
 from app.cron.zal_importer import OrganisationImportCommand
+from app.cron.zorgab_healthcare_scrape_command import ZorgABHealthcareScrapeCommand
+
+logger = logging.getLogger(__name__)
 
 
 class CronCommand(Protocol):
     @staticmethod
-    def init_arguments(subparser: Any) -> None: ...
+    def init_arguments(subparser: SubParsers) -> None: ...
 
     def run(self, args: argparse.Namespace) -> int: ...
 
 
 CRON_COMMANDS: dict[str, Type[CronCommand]] = {
-    OrganisationImportCommand.NAME: OrganisationImportCommand,
-    EndpointSignatureRenewCommand.NAME: EndpointSignatureRenewCommand,
     CleanupExpiredImportedOrganisationsCommand.NAME: CleanupExpiredImportedOrganisationsCommand,
+    NormalizationCommand.NAME: NormalizationCommand,
+    OrganisationImportCommand.NAME: OrganisationImportCommand,
+    UpdateSearchIndexCommand.NAME: UpdateSearchIndexCommand,
+    ZorgABHealthcareScrapeCommand.NAME: ZorgABHealthcareScrapeCommand,
 }
 
 
@@ -50,12 +57,8 @@ def run_command() -> None:
             ),
         )
 
-    logger: Logger = inject.instance(logging.Logger)
-
     parser = argparse.ArgumentParser(description="Cron command line interface")
-    subparser: argparse._SubParsersAction[argparse.ArgumentParser] = parser.add_subparsers(
-        dest="command", title="cron commands", help="valid cron commands"
-    )
+    subparser: SubParsers = parser.add_subparsers(dest="command", title="cron commands", help="valid cron commands")
 
     # Add help command
     subparser.add_parser("help", help="Show this help message or help for a specific command")

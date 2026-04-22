@@ -97,6 +97,8 @@ class DataService(Base):
 class SystemRole(Base):
     __tablename__ = "system_roles"
 
+    PROVIDING_ROLE_SUFFIX = "B-FHIR"
+
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
     data_service_id: Mapped[int] = mapped_column(ForeignKey("data_services.id", ondelete="CASCADE"))
     code: Mapped[str] = mapped_column("code", String(32), nullable=False)
@@ -115,19 +117,20 @@ class SystemRole(Base):
         )>
         """
 
+    def is_providing_role(self) -> bool:
+        return self.code.endswith(self.PROVIDING_ROLE_SUFFIX)
+
 
 class Endpoint(Base):
     __tablename__ = "endpoints"
 
     id: Mapped[int] = mapped_column("id", Integer, primary_key=True)
     url: Mapped[str] = mapped_column("url", Text, nullable=False)
-    signature: Mapped[str | None] = mapped_column("signature", String(100), nullable=True)
 
     def __repr__(self) -> str:
         return f"""
         <Endpoint(
             id={self.id},
             url={self.url},
-            signature={self.signature},
         )>
         """

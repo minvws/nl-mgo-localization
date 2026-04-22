@@ -1,0 +1,22 @@
+[
+    {
+        "id": "ura:12345678",
+        "medmij_id": "aliases-org",
+        "name": "Scenario: with aliases",
+        "care_type": "",
+        "city": "amsterdam",
+        "postal_code": "1000AA",
+        "address": "Aliasstraat 1",
+        "geo_lat": null,
+        "geo_lng": null,
+        "search_blob": "Scenario: with aliases amsterdam | alias 1 | 1000AA | Aliasstraat 1",
+        "data_services": [
+            {
+                "id": "49",
+                "auth_endpoint": "4",
+                "token_endpoint": "5",
+                "resource_endpoint": "6"
+            }
+        ]
+    }
+]

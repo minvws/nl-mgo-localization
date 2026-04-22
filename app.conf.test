@@ -42,9 +42,9 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
-[signing]
-private_key_path=/src/secrets/private_signing.pem
-sign_endpoints=True
+[jwe]
+signing_private_key_path=tests/_fixtures/FAKE_private_signing.key
+encryption_public_key_path=tests/_fixtures/FAKE_placeholder_jwe_encryption.pub
 
 [healthcarefinder]
 ; When set to True, a predefined search query can force the use of a ZorgAB mock adapter

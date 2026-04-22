@@ -38,10 +38,10 @@ type-check: ## Check for typing errors
 	$(RUN_PREFIX) mypy
 
 spelling-check: ## Check spelling mistakes
-	$(RUN_PREFIX) codespell --ignore-words=.codespell_ignore.txt .
+	$(RUN_PREFIX) codespell app
 
 spelling-fix: ## Fix spelling mistakes
-	$(RUN_PREFIX) codespell . --write-changes --interactive=3
+	$(RUN_PREFIX) codespell app --write-changes --interactive=3
 
 shell: bash
 

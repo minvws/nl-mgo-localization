@@ -30,7 +30,7 @@ else
 fi
 
 echo "➡️ Generating signing key"
-if [ -e secrets/public_signing.pem ] && [ -e secrets/private_signing.pem ]; then
+if [ -e secrets/public_signing.pem ] && [ -e secrets/private_signing.key ]; then
     echo "⚠️ Signing key already exist. Skipping."
 else
     ./tools/generate-sign-key.sh

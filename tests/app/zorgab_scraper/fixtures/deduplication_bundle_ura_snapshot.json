@@ -1,0 +1,48 @@
+{
+    "resourceType": "Bundle",
+    "type": "collection",
+    "entry": [
+        {
+            "fullUrl": "https://example.com/Organization/org-ura-1",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-201",
+                "name": "Organization URA Alpha",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "00010001"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "https://example.com/Organization/org-ura-2",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-202",
+                "name": "Organization URA Alpha",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "00010001"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "https://example.com/Organization/org-ura-3",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-203",
+                "name": "Organization URA Beta",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "00010002"
+                    }
+                ]
+            }
+        }
+    ]
+}

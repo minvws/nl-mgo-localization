@@ -1,9 +1,10 @@
 from typing import Any
 
 import inject
+from fhir.resources.STU3.bundle import Bundle
 
 from app.addressing.models import ZalDataServiceResponse, ZalDataServiceRoleResponse
-from app.addressing.signing_service import SigningService
+from app.addressing.services import EndpointJWEWrapper
 from app.config.models import Config
 from app.healthcarefinder.interface import HealthcareFinderAdapter
 from app.healthcarefinder.models import (
@@ -18,18 +19,18 @@ from app.healthcarefinder.models import (
 
 
 class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
-    @inject.autoparams("signing_service", "config")
-    def __init__(self, signing_service: SigningService, config: Config):
-        self.__signing_service = signing_service
+    @inject.autoparams()
+    def __init__(self, endpoint_jwe_wrapper: EndpointJWEWrapper, config: Config):
+        self.__endpoint_jwe_wrapper = endpoint_jwe_wrapper
         self.__config = config
 
     def __build_mock_url(self, endpoint: str) -> str:
         mock_base_url = self.__config.app.mock_base_url
-        url = self.__signing_service.sign_endpoint(f"{mock_base_url}{endpoint}")
+        url = self.__endpoint_jwe_wrapper.wrap(f"{mock_base_url}{endpoint}")
 
         return url
 
-    def search_organizations(self, search: SearchRequest) -> SearchResponse | None:
+    def __build_organizations_list(self) -> list[Organization]:
         organizations: list[Organization] = []
 
         organizations.append(
@@ -45,15 +46,24 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             self.create_organization(self.get_organization_without_dataservices_data()),
         )
         organizations.append(
+            self.create_organization(self.get_j_foudrainekliniek_data()),
+        )
+        organizations.append(
             self.create_organization(self.get_apothecary_data()),
         )
         organizations.append(
             self.create_organization(self.get_tante_bianca_data()),
         )
 
-        return SearchResponse(organizations=organizations)
+        return organizations
 
-    def create_organization(self, data: dict[str, Any]) -> Organization:
+    def search_organizations(self, search: SearchRequest) -> SearchResponse | None:
+        return SearchResponse(organizations=self.__build_organizations_list())
+
+    def search_organizations_raw_fhir(self, search: SearchRequest) -> Bundle | None:
+        return None
+
+    def create_organization(self, data: dict[str, Any]) -> Organization:  # type: ignore[explicit-any]
         addresses = self.__create_addresses(data.get("addresses", []))
         types = self.__create_types(data.get("types", []))
         data_services = self.__create_data_services(data.get("data_services", []))
@@ -72,7 +82,7 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             data_services=data_services,
         )
 
-    def __create_addresses(self, addresses_data: list[dict[str, Any]]) -> list[Address]:
+    def __create_addresses(self, addresses_data: list[dict[str, Any]]) -> list[Address]:  # type: ignore[explicit-any]
         addresses = []
         for address_data in addresses_data:
             address = Address(
@@ -87,12 +97,12 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             addresses.append(address)
         return addresses
 
-    def __create_geolocation(self, geolocation_data: dict[str, Any]) -> GeoLocation:
+    def __create_geolocation(self, geolocation_data: dict[str, Any]) -> GeoLocation:  # type: ignore[explicit-any]
         return GeoLocation(
             latitude=geolocation_data.get("latitude", 0.0), longitude=geolocation_data.get("longitude", 0.0)
         )
 
-    def __create_types(self, types_data: list[dict[str, Any]]) -> list[CType]:
+    def __create_types(self, types_data: list[dict[str, Any]]) -> list[CType]:  # type: ignore[explicit-any]
         types = []
         for type_data in types_data:
             ctype = CType(
@@ -103,31 +113,31 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             types.append(ctype)
         return types
 
-    def __create_data_services(self, data_services_data: list[dict[str, Any]]) -> list[ZalDataServiceResponse]:
+    def __create_data_services(self, data_services_data: list[dict[str, Any]]) -> list[ZalDataServiceResponse]:  # type: ignore[explicit-any]
         data_services = []
         for data_service_data in data_services_data:
             data_service = ZalDataServiceResponse(
                 id=data_service_data.get("id", "0"),
                 name=data_service_data.get("name", ""),
                 interface_versions=data_service_data.get("interface_versions", []),
-                auth_endpoint=data_service_data.get("auth_endpoint", ""),
-                token_endpoint=data_service_data.get("token_endpoint", ""),
+                auth_endpoint=self.__endpoint_jwe_wrapper.wrap(data_service_data.get("auth_endpoint", "")),
+                token_endpoint=self.__endpoint_jwe_wrapper.wrap(data_service_data.get("token_endpoint", "")),
                 roles=self.__create_roles(roles_data=data_service_data.get("roles", [])),
             )
             data_services.append(data_service)
         return data_services
 
-    def __create_roles(self, roles_data: list[dict[str, Any]]) -> list[ZalDataServiceRoleResponse]:
+    def __create_roles(self, roles_data: list[dict[str, Any]]) -> list[ZalDataServiceRoleResponse]:  # type: ignore[explicit-any]
         roles = []
         for role_data in roles_data:
             role = ZalDataServiceRoleResponse(
                 code=role_data.get("code", ""),
-                resource_endpoint=role_data.get("resource_endpoint", ""),
+                resource_endpoint=self.__endpoint_jwe_wrapper.wrap(role_data.get("resource_endpoint", "")),
             )
             roles.append(role)
         return roles
 
-    def get_ziekenhuis_de_ziekenboeg_data(self) -> dict[str, Any]:
+    def get_ziekenhuis_de_ziekenboeg_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "display_name": "Ziekenhuis Nieuw Juinen",
             "identification_type": "demo",
@@ -188,7 +198,7 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             ],
         }
 
-    def get_huisartsenpraktijk_de_huisarts_data(self) -> dict[str, Any]:
+    def get_huisartsenpraktijk_de_huisarts_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "display_name": "Huisartspraktijk Heideroosje",
             "identification_type": "demo",
@@ -249,7 +259,7 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             ],
         }
 
-    def get_rivm_data(self) -> dict[str, Any]:
+    def get_rivm_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "display_name": "RIVM",
             "identification_type": "demo",
@@ -257,11 +267,11 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             "addresses": [
                 {
                     "active": True,
-                    "address": "Postbus 654, 2700AR Zoetermeer",
-                    "city": "Zoetermeer",
+                    "address": "Antonie van Leeuwenhoeklaan 9,\r\n3721 MA Bilthoven",
+                    "city": "Bilthoven",
                     "country": "Nederland",
                     "geolocation": {"latitude": 12345.678, "longitude": 98765.432},
-                    "postalcode": "1000AB",
+                    "postalcode": "3721MA",
                     "state": None,
                     "type": "physical",
                 },
@@ -293,7 +303,49 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             ],
         }
 
-    def get_organization_without_dataservices_data(self) -> dict[str, Any]:
+    def get_j_foudrainekliniek_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
+        return {
+            "display_name": "J. Foudrainekliniek",
+            "identification_type": "demo",
+            "identification_value": "444444",
+            "addresses": [
+                {
+                    "active": True,
+                    "address": "Wie is van Houtlaan 1\n9624 TV Anderen",
+                    "city": "Anderen",
+                    "country": "Nederland",
+                    "geolocation": {"latitude": 53.0159, "longitude": 6.6541},
+                    "postalcode": "9624TV",
+                    "state": None,
+                    "type": "physical",
+                }
+            ],
+            "names": [{"full_name": "J. Foudrainekliniek", "preferred": True}],
+            "types": [
+                {
+                    "code": "mental-health",
+                    "display_name": "Geestelijke gezondheidszorg",
+                    "type": "organization",
+                }
+            ],
+            "data_services": [
+                {
+                    "id": "50",
+                    "name": "Basisgegevens GGZ",
+                    "interface_versions": ["2"],
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
+                    "roles": [
+                        {
+                            "code": "MM-2.0-GGR-FHIR",
+                            "resource_endpoint": self.__build_mock_url("/50"),
+                        }
+                    ],
+                },
+            ],
+        }
+
+    def get_organization_without_dataservices_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "display_name": "Fysiotherapiepraktijk De Toekomst",
             "identification_type": "",
@@ -321,7 +373,7 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             "data_services": [],
         }
 
-    def get_apothecary_data(self) -> dict[str, Any]:
+    def get_apothecary_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "display_name": "Apotheek Aanstalten",
             "identification_type": "",
@@ -349,24 +401,24 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             "data_services": [],
         }
 
-    def get_tante_bianca_data(self) -> dict[str, Any]:
+    def get_tante_bianca_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
-            "display_name": "Tante Bianca",
+            "display_name": "Verpleeghuis Tante Bianca",
             "identification_type": "demo",
             "identification_value": "333333",
             "addresses": [
                 {
                     "active": True,
-                    "address": "Tantestraat 42\r\n1030CD Utrecht",
-                    "city": "Utrecht",
+                    "address": "Parnassusplein 5 \r\n2511 VX Den Haag",
+                    "city": "Den Haag",
                     "country": "Nederland",
                     "geolocation": {"latitude": 52.0907, "longitude": 5.1214},
-                    "postalcode": "1030CD",
+                    "postalcode": "2511 VX",
                     "state": None,
                     "type": "physical",
                 }
             ],
-            "names": [{"full_name": "Tante Bianca", "preferred": True}],
+            "names": [{"full_name": "Verpleeghuis Tante Bianca", "preferred": True}],
             "types": [
                 {
                     "code": "0300",

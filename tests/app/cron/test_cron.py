@@ -1,4 +1,4 @@
-from typing import Any
+import argparse
 
 import inject
 import pytest
@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from app.bindings import configure_bindings as configure_app_bindings
 from app.config.factories import get_config
 from app.cron.cron import CRON_COMMANDS, CronCommand, command_exists, command_get, run_command
+from app.cron.utils import SubParsers
 from app.cron.zal_importer import OrganisationImportCommand
 from tests.utils import clear_bindings, configure_bindings
 
@@ -50,11 +51,11 @@ def test_cron_command_interface(mocker: MockerFixture) -> None:
     mocker.patch("argparse.ArgumentParser.parse_args", parsed_args)
 
     class ImporterInstance(CronCommand):
-        def run(self, args: Any) -> int:
+        def run(self, args: argparse.Namespace) -> int:
             return 0
 
         @staticmethod
-        def init_arguments(subparser: Any) -> None:
+        def init_arguments(subparser: SubParsers) -> None:
             return None
 
     mocker.patch.dict(CRON_COMMANDS, {"validObject": ImporterInstance}, clear=True)
@@ -74,11 +75,11 @@ def test_cron_run_command_without_bindings(mocker: MockerFixture) -> None:
     mock_get_config.return_value = get_config(config_file="app.conf.test")
 
     class ImporterInstance(CronCommand):
-        def run(self, args: Any) -> int:
+        def run(self, args: argparse.Namespace) -> int:
             return 0
 
         @staticmethod
-        def init_arguments(subparser: Any) -> None:
+        def init_arguments(subparser: SubParsers) -> None:
             return None
 
     mocker.patch.dict(CRON_COMMANDS, {"validObject": ImporterInstance}, clear=True)

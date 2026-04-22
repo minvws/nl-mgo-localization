@@ -1,31 +1,38 @@
-import configparser
 import os
-from typing import Any
+from configparser import ConfigParser
+from typing import TypeAlias
 
 from .models import Config
 
+SectionName: TypeAlias = str
+ConfigValue: TypeAlias = str
+SectionDict: TypeAlias = dict[str, ConfigValue]
+RawConfigDict: TypeAlias = dict[SectionName, SectionDict]
 
-class ConfigParser:
+
+class AppConfigLoader:
     DEFAULT_SECTION = "default"
 
     def __init__(
         self,
-        config_parser: configparser.ConfigParser,
+        config_parser: ConfigParser,
         config_path: str,
     ) -> None:
         self.config_parser = config_parser
         self.config_path = config_path
 
-    def parse(self) -> Config:
+    def load_dict(self) -> RawConfigDict:
         if not os.path.exists(self.config_path):
             raise FileNotFoundError(f"Configuration file '{self.config_path}' not found.")
 
         self.config_parser.read(self.config_path)
 
-        conf_values: dict[str, Any] = {}
+        conf_values: RawConfigDict = {}
 
         for section in self.config_parser.sections():
-            section_values = dict(self.config_parser[section])
-            conf_values.update({section: section_values} if section != self.DEFAULT_SECTION else section_values)
+            conf_values[section] = dict(self.config_parser[section])
 
-        return Config(**conf_values)
+        return conf_values
+
+    def load(self) -> Config:
+        return Config.model_validate(self.load_dict())

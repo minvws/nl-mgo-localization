@@ -1,20 +1,20 @@
-from app.cron.commands import CleanupExpiredImportedOrganisationsCommand
+from app.cron.commands.commands import CleanupExpiredImportedOrganisationsCommand
 from app.db.repositories import (
     DataServiceRepository,
-    EndpointRepository,
+    DbEndpointRepository,
     IdentifyingFeatureRepository,
     OrganisationRepository,
 )
-from tests.factories.data_service import create_dataservice
-from tests.factories.identifying_feature import create_identifying_feature
-from tests.factories.organisation import create_organisation
+from tests._factories.data_service import create_dataservice
+from tests._factories.identifying_feature import create_identifying_feature
+from tests._factories.organisation import create_organisation
 
 
 def test_cleanup_expired_imported_organisations(
     organisation_repository: OrganisationRepository,
     data_service_repository: DataServiceRepository,
     identifying_feature_repository: IdentifyingFeatureRepository,
-    endpoint_repository: EndpointRepository,
+    endpoint_repository: DbEndpointRepository,
 ) -> None:
     org_a = create_organisation(organisation_repository, {"import_ref": "1709634749000238"})
     org_b = create_organisation(organisation_repository, {"import_ref": "1709634749000239"})

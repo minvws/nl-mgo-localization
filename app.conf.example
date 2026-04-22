@@ -6,11 +6,17 @@
 #  zorgab         | Fetches data from the ZorgAB API
 # )
 healthcare_adapter=mock
+
 # Adapter to use to fetch addressing data (mock | zal)
 addressing_adapter=mock
 
-# the url that point to the mock dva server
+# fully qualified base URL that point to the mock dva server
 mock_base_url=http://localhost:8002
+
+# List of cron commands to run automatically as cron task when the application starts.
+# Each command must be placed on a new line in the format: <task_name> [optional CLI arguments]
+;on_startup_cron_commands =
+;    search-index:update --scrape-limit 50
 
 ;[logging]
 ;logger_name=load
@@ -33,6 +39,11 @@ mtls_key_file=secrets/mgo.key
 mtls_chain_file=secrets/mgo.chain
 proxy=
 
+[zorgab_scraper]
+zakl_path=resources/zakl.xml
+agb_csv_path=resources/agb-csv.csv
+;results_base_dir
+
 # Web server settings (development mode only)
 [uvicorn]
 # The host to be running on
@@ -47,12 +58,28 @@ ssl_base_dir = secrets/ssl
 ssl_cert_file = server.cert
 ssl_key_file = server.key
 
-[signing]
-private_key_path=/src/secrets/private_signing.pem
-sign_endpoints=True
+[jwe]
+signing_private_key_path=secrets/private_signing.key
+encryption_public_key_path=secrets/placeholder_jwe_encryption.pub
 
 ;[healthcarefinder]
 ; When set to True, a predefined search query can force the use of a ZorgAB mock adapter
 ;allow_search_bypass=false
 ; When set to true, hydration errors will be suppressed instead of being raised.
 ;suppress_hydration_errors=false
+
+[normalization]
+;normalization_output_folder=
+
+;[search_indexation]
+; Enable merging mock organizations (Mocky hospital, Interoplab Hospital) into the search index
+;include_mock_organizations=false
+; Path to mock organizations JSON file containing mock organizations
+;mock_organizations_path=
+; Path to mock addressing JSON file containing endpoint IDs and URLs for mock endpoints
+;mock_addressing_path=
+
+[benchmark]
+;zorgab_write_output=
+;zorgab_query_input_path=
+;zorgab_output_dir=

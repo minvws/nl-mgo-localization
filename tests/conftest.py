@@ -5,16 +5,25 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.config.models import Config
 from app.db.db import Database
 from app.db.repositories import (
     DataServiceRepository,
-    EndpointRepository,
+    DbEndpointRepository,
     IdentifyingFeatureRepository,
     OrganisationRepository,
     SystemRoleRepository,
 )
 from app.main import create_fastapi_app
-from tests.utils import clear_bindings, configure_bindings
+
+from .utils import clear_bindings, configure_bindings, load_config
+
+
+@pytest.fixture()
+def bindings() -> Generator[None, None, None]:
+    configure_bindings()
+    yield
+    clear_bindings()
 
 
 @pytest.fixture()
@@ -25,7 +34,7 @@ def test_client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(scope="function")
-def db_wrapper(test_client: TestClient) -> Generator[Database, None, None]:
+def db_wrapper() -> Generator[Database, None, None]:
     database: Database = inject.instance(Database)
     database.generate_tables()
     yield database
@@ -43,6 +52,11 @@ def db_session(db_wrapper: Database) -> Generator[Session, None, None]:
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
     return "asyncio"
+
+
+@pytest.fixture()
+def config() -> Config:
+    return load_config()
 
 
 """ Repository fixtures"""
@@ -73,6 +87,6 @@ def system_role_repository(db_session: Session) -> SystemRoleRepository:
 
 
 @pytest.fixture(scope="function")
-def endpoint_repository(db_session: Session) -> EndpointRepository:
-    repository: EndpointRepository = EndpointRepository(db_session)
+def endpoint_repository(db_session: Session) -> DbEndpointRepository:
+    repository: DbEndpointRepository = DbEndpointRepository(db_session)
     return repository

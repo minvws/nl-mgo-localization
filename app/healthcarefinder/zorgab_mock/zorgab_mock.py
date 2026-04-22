@@ -2,6 +2,7 @@ from logging import Logger
 from pathlib import Path
 
 import inject
+from fhir.resources.STU3.bundle import Bundle
 
 from app.healthcarefinder.interface import HealthcareFinderAdapter
 from app.healthcarefinder.models import (
@@ -20,8 +21,15 @@ class ZorgABMockHydrationAdapter(HealthcareFinderAdapter):
         self.__logger = logger
 
     def search_organizations(self, search: SearchRequest) -> SearchResponse | None:
-        self.__logger.info("Searching Hydrated ZorgAB mock with %s" % search.model_dump_json())
+        self.__logger.info("Searching Hydrated ZorgAB mock with %s", search.model_dump_json())
 
+        organizations = self.__build_organizations_list()
+        if organizations is None:
+            return None
+
+        return SearchResponse(organizations=organizations)
+
+    def __build_organizations_list(self) -> list[Organization] | None:
         json: str = self._get_json_mock_response()
         decoded_organizations: OrganizationsModel = OrganizationsModel.model_validate_json(json)
 
@@ -41,7 +49,11 @@ class ZorgABMockHydrationAdapter(HealthcareFinderAdapter):
                 )
             )
 
-        return SearchResponse(organizations=organizations)
+        return organizations
+
+    def search_organizations_raw_fhir(self, search: SearchRequest) -> Bundle | None:
+        self.__logger.info("Raw FHIR search is not supported by ZorgABMockHydrationAdapter")
+        return None
 
     def __get_address(self, decoded_organization: OrganizationModel) -> list[Address]:
         # We have to "convert" from ZorgAB address to search response address. Even though

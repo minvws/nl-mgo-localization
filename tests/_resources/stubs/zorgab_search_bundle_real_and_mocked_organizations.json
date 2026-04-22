@@ -1,0 +1,31 @@
+{
+    "resourceType": "Bundle",
+    "type": "searchset",
+    "total": 1,
+    "entry": [
+        {
+            "resource": {
+                "resourceType": "Organization",
+                "id": "scenario-real-and-mocked-org",
+                "name": "Scenario: real organization with mock merge enabled",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/agb-z",
+                        "value": "11111111"
+                    }
+                ],
+                "address": [
+                    {
+                        "city": "Utrecht",
+                        "postalCode": "3528 BD",
+                        "line": [
+                            "Poststreet 1005"
+                        ],
+                        "type": "physical",
+                        "use": "work"
+                    }
+                ]
+            }
+        }
+    ]
+}

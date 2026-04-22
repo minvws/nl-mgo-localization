@@ -1,45 +1,33 @@
-from logging import Logger
-
 import inject
-from sqlalchemy.orm import Session
 
-from app.db.repositories import EndpointRepository
+from app.addressing.constants import ENDPOINT_JWE_EXPIRATION_SECONDS
+from app.addressing.repositories import KeyStoreRepository
 
-from .schemas import EndpointSignatureRenewResultDTO
-from .signing_service import SigningService
+from .factories import EndpointJWEFactory, EndpointJWTFactory
 
 
-class EndpointSignatureRenewer:
-    @inject.autoparams()
+class EndpointJWEWrapper:
+    @inject.autoparams("jwt_factory", "jwe_factory", "key_repository")
     def __init__(
-        self, endpoint_repository: EndpointRepository, session: Session, signing_service: SigningService, logger: Logger
-    ):
-        self.__endpoint_repository = endpoint_repository
-        self.__session = session
-        self.__signing_service = signing_service
-        self.__logger = logger
+        self,
+        jwt_factory: EndpointJWTFactory,
+        jwe_factory: EndpointJWEFactory,
+        key_repository: KeyStoreRepository,
+    ) -> None:
+        self.__jwt_factory = jwt_factory
+        self.__jwe_factory = jwe_factory
+        self.__key_repository = key_repository
 
-    def renew(self) -> EndpointSignatureRenewResultDTO:
-        result = EndpointSignatureRenewResultDTO()
+    def wrap(self, endpoint: str) -> str:
+        jwt_key = self.__key_repository.get_first_key_from_store(EndpointJWTFactory.JWT_KEY_LABEL)
+        jwe_key = self.__key_repository.get_first_key_from_store(EndpointJWEFactory.JWE_KEY_LABEL)
 
-        for endpoint in self.__endpoint_repository.find_all():
-            existing_signature = endpoint.signature is not None
+        jwt = self.__jwt_factory.build(
+            endpoint=endpoint, signing_key=jwt_key, expiration_seconds=ENDPOINT_JWE_EXPIRATION_SECONDS
+        )
 
-            try:
-                endpoint.signature = self.__signing_service.generate_signature(endpoint.url)
-            except Exception:
-                self.__logger.exception(
-                    "Failed to generate signature for endpoint (id: %d, url: %s)", endpoint.id, endpoint.url
-                )
-                result.increment_skipped()
+        jwt_string = jwt.serialize()
+        jwe = self.__jwe_factory.encrypt(payload=jwt_string, encryption_key=jwe_key)
+        jwe_string: str = jwe.serialize(compact=True)
 
-                continue
-
-            if existing_signature:
-                result.increment_updated()
-            else:
-                result.increment_added()
-
-        self.__session.commit()
-
-        return result
+        return jwe_string

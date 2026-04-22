@@ -1,7 +1,11 @@
 from enum import Enum
-from typing import Optional, Self
+from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
+
+from app.config.utils import lines_to_list
+from app.zorgab_scraper.config import ZorgABScraperConfig
 
 
 class LogLevel(str, Enum):
@@ -27,17 +31,17 @@ class ConfigApp(BaseModel):
     healthcare_adapter: HealthcareAdapterType = Field(default=HealthcareAdapterType.mock)
     addressing_adapter: AddressingAdapterType = Field(default=AddressingAdapterType.mock)
     uvicorn_app: bool = Field(default=False)
-    mock_base_url: str | None = None
+    mock_base_url: str
+    on_startup_cron_commands: list[str] = Field(default_factory=list)
 
-    @model_validator(mode="after")
-    def assert_mock_base_url_is_required_when_healthcare_adapter_mock(self) -> Self:
-        if self.healthcare_adapter != HealthcareAdapterType.mock:
-            return self
+    @model_validator(mode="before")
+    @classmethod
+    def parse_on_startup_cron_commands(cls, values: dict[str, Any]) -> dict[str, Any]:  # type: ignore[explicit-any]
+        tasks = values.get("on_startup_cron_commands")
+        if isinstance(tasks, str):
+            values["on_startup_cron_commands"] = lines_to_list(tasks, str)
 
-        if self.mock_base_url is None:
-            raise ValueError('"mock_base_url" is required when using the mock addressing adapter')
-
-        return self
+        return values
 
 
 class ConfigDatabase(BaseModel):
@@ -62,19 +66,9 @@ class ConfigUvicorn(BaseModel):
     ssl_key_file: str | None
 
 
-class SigningConfig(BaseModel):
-    sign_endpoints: bool = Field(default=True)
-    private_key_path: Optional[str] = None
-
-    @model_validator(mode="after")
-    def assert_required_fields_when_signing_is_enabled(self) -> Self:
-        if not self.sign_endpoints:
-            return self
-
-        if self.private_key_path is None:
-            raise ValueError('"private_key_path" is required when signing is enabled')
-
-        return self
+class JWEConfig(BaseModel):
+    signing_private_key_path: Path = Field()
+    encryption_public_key_path: Path = Field()
 
 
 class HealthcareFinderConfig(BaseModel):
@@ -87,11 +81,34 @@ class LoggingConfig(BaseModel):
     log_level: str = "DEBUG"
 
 
+class BenchmarkConfig(BaseModel):
+    zorgab_write_output: bool = Field(default=False)
+    zorgab_query_input_path: str = Field(default="resources/benchmark/zorgab/default_input.json")
+    zorgab_output_dir: str = Field(default="storage/benchmarks/zorgab/")
+
+
+class NormalizationConfig(BaseModel):
+    """Configuration for normalization outputs."""
+
+    normalization_output_folder: str = Field(default="static/search/normalization")
+
+
+class SearchIndexationConfig(BaseModel):
+    include_mock_organizations: bool = Field(default=False)
+    mock_organizations_path: Path = Field(default=Path("resources/search_index/mock-organizations.json"))
+    mock_addressing_path: Path = Field(default=Path("resources/search_index/mock-endpoints.json"))
+
+
 class Config(BaseModel):
     app: ConfigApp
+
     logging: LoggingConfig = LoggingConfig()
     zorgab: ConfigZorgab
     uvicorn: ConfigUvicorn
     database: ConfigDatabase
-    signing: SigningConfig
+    jwe: JWEConfig
     healthcarefinder: HealthcareFinderConfig = HealthcareFinderConfig()
+    zorgab_scraper: ZorgABScraperConfig = ZorgABScraperConfig()
+    normalization: NormalizationConfig = NormalizationConfig()
+    benchmark: BenchmarkConfig = BenchmarkConfig()
+    search_indexation: SearchIndexationConfig = SearchIndexationConfig()

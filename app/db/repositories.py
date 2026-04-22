@@ -1,5 +1,6 @@
 import json
-from typing import Any, List
+from abc import abstractmethod
+from typing import List, Protocol
 
 import inject
 from sqlalchemy import ScalarSelect
@@ -86,7 +87,7 @@ class OrganisationRepository(BaseRepository):
         )
         self._session.commit()
 
-    def __latest_import_ref_subquery(self) -> ScalarSelect[Any]:
+    def __latest_import_ref_subquery(self) -> ScalarSelect[str]:
         return (
             self._session.query(Organisation.import_ref)
             .order_by(Organisation.import_ref.desc())
@@ -190,14 +191,18 @@ class IdentifyingFeatureRepository(BaseRepository):
         return self._session.query(IdentifyingFeature).filter_by(import_ref=import_ref).first() is not None
 
 
-class EndpointRepository(BaseRepository):
+class EndpointRepository(Protocol):
+    @abstractmethod
+    def find_all(self) -> List[Endpoint]: ...
+
+
+class DbEndpointRepository(BaseRepository, EndpointRepository):
     def create(
         self,
         url: str,
-        signature: str | None = None,
         persist: bool = False,
     ) -> Endpoint:
-        self._session.add(endpoint := Endpoint(url=url, signature=signature))
+        self._session.add(endpoint := Endpoint(url=url))
 
         if persist:
             self._session.commit()

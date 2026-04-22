@@ -6,3 +6,10 @@ secrets/
 .autopilot
 .DS_Store
 .idea/
+static/search/
+static/search_index.json
+storage/benchmarks/
+data
+resources/agb-csv.csv
+resources/zakl.xml
+resources/zal.xml

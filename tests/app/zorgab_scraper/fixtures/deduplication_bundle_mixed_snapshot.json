@@ -1,0 +1,66 @@
+{
+    "resourceType": "Bundle",
+    "type": "collection",
+    "entry": [
+        {
+            "fullUrl": "https://example.com/Organization/org-mix-1",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-301",
+                "name": "Organization Mix Alpha",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/agb-z",
+                        "value": "02000001"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "https://example.com/Organization/org-mix-2",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-302",
+                "name": "Organization Mix Alpha",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/agb-z",
+                        "value": "02000001"
+                    },
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "00020001"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "https://example.com/Organization/org-mix-3",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-303",
+                "name": "Organization Mix Alpha",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "00020001"
+                    }
+                ]
+            }
+        },
+        {
+            "fullUrl": "https://example.com/Organization/org-mix-4",
+            "resource": {
+                "resourceType": "Organization",
+                "id": "fhir-304",
+                "name": "Organization Mix Beta",
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "00020002"
+                    }
+                ]
+            }
+        }
+    ]
+}

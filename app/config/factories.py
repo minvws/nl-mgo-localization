@@ -1,17 +1,15 @@
-import configparser
+from configparser import ConfigParser
 
 from app.utils import root_path
 
 from .models import Config
-from .services import ConfigParser
+from .services import AppConfigLoader
 
 
 def get_config(config_file: str) -> Config:
-    config_parser: ConfigParser = ConfigParser(
-        config_parser=configparser.ConfigParser(
-            interpolation=configparser.ExtendedInterpolation(),
-        ),
+    app_config_loader = AppConfigLoader(
+        config_parser=ConfigParser(),
         config_path=root_path(config_file),
     )
 
-    return config_parser.parse()
+    return app_config_loader.load()

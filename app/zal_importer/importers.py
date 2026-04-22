@@ -8,12 +8,11 @@ from xml.etree.ElementTree import Element
 import inject
 from sqlalchemy.orm import Session
 
-from app.addressing.signing_service import SigningService
 from app.cron.utils import print_progress_bar
 from app.db.models import Organisation
 from app.db.repositories import (
     DataServiceRepository,
-    EndpointRepository,
+    DbEndpointRepository,
     IdentifyingFeatureRepository,
     OrganisationRepository,
     SystemRoleRepository,
@@ -44,10 +43,9 @@ class OrganisationListImporter(OrganisationImporter):
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
         system_role_repository: SystemRoleRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         session: Session,
         logger: Logger,
-        signing_service: SigningService | None = None,
     ) -> None:
         self.__organisation_repository = organisation_repository
         self.__data_service_repository = data_service_repository
@@ -55,7 +53,6 @@ class OrganisationListImporter(OrganisationImporter):
         self.__endpoint_repository = endpoint_repository
         self.__session = session
         self.__logger = logger
-        self.__signing_service = signing_service
 
     def process_xml(self, traverser: ElementTraverser) -> None:
         import_reference = self._create_import_reference(traverser)
@@ -102,13 +99,13 @@ class OrganisationListImporter(OrganisationImporter):
                         **self.__extract_system_role_data(traverser, system_role_element),
                     )
 
-    def __extract_organisation_data(self, traverser: ElementTraverser, organisation_element: Element) -> dict[str, Any]:
+    def __extract_organisation_data(self, traverser: ElementTraverser, organisation_element: Element) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "name": traverser.get_nested_text("Zorgaanbiedernaam", organisation_element),
             "type": OrganisationType(traverser.get_nested_text("Aanbiedertype", organisation_element)),
         }
 
-    def __extract_data_service_data(self, traverser: ElementTraverser, data_service_element: Element) -> dict[str, Any]:
+    def __extract_data_service_data(self, traverser: ElementTraverser, data_service_element: Element) -> dict[str, Any]:  # type: ignore[explicit-any]
         auth_endpoint_url = traverser.get_nested_text(
             "AuthorizationEndpoint/AuthorizationEndpointuri", data_service_element
         )
@@ -120,7 +117,7 @@ class OrganisationListImporter(OrganisationImporter):
             "token_endpoint_id": self.__find_or_create_endpoint(token_endpoint_url),
         }
 
-    def __extract_system_role_data(self, traverser: ElementTraverser, system_role_element: Element) -> dict[str, Any]:
+    def __extract_system_role_data(self, traverser: ElementTraverser, system_role_element: Element) -> dict[str, Any]:  # type: ignore[explicit-any]
         resource_endpoint_url = traverser.get_nested_text("ResourceEndpoint/ResourceEndpointuri", system_role_element)
 
         return {
@@ -129,13 +126,10 @@ class OrganisationListImporter(OrganisationImporter):
         }
 
     def __find_or_create_endpoint(self, url: str) -> int:
-        signature = self.__signing_service.generate_signature(url) if self.__signing_service is not None else None
         endpoint = self.__endpoint_repository.find_one_by_url(url)
 
         if endpoint is None:
-            return self.__endpoint_repository.create(url=url, signature=signature).id
-
-        endpoint.signature = signature
+            return self.__endpoint_repository.create(url=url).id
 
         return endpoint.id
 
@@ -238,7 +232,7 @@ class OrganisationJoinListImporter(OrganisationImporter):
             traverser.get_nested_text("Weergavenaam", data_service_element),
         )
 
-    def __extract_identifying_feature_data(
+    def __extract_identifying_feature_data(  # type: ignore[explicit-any]
         self, traverser: ElementTraverser, identifying_feature_element: Element
     ) -> dict[str, Any]:
         type_element = traverser.get_child_element(identifying_feature_element)

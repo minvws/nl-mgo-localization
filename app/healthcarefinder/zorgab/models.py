@@ -35,24 +35,24 @@ class Conformance(BaseModel):
     send: bool
 
 
-class ElectronicService(BaseModel):
+class ElectronicService(BaseModel):  # type: ignore[explicit-any]
     _className: str
     active: Optional[bool] = False
     address: str | None = None
     applicationId: str | None = None
     author: str
     conformances: List[Conformance] = []
-    description: Optional[Any] = None
+    description: Optional[Any] = None  # type: ignore[explicit-any]
     index: str
     status: str | None = None
     systemRoles: List[str] = []
     timestamp: str
 
 
-class Identification(BaseModel):
+class Identification(BaseModel):  # type: ignore[explicit-any]
     active: bool
     author: str
-    description: Any
+    description: Any  # type: ignore[explicit-any]
     index: str
     timestamp: str
     type: str
@@ -90,24 +90,24 @@ class Type(BaseModel):
     type: str
 
 
-class OrganizationModel(BaseModel):
+class OrganizationModel(BaseModel):  # type: ignore[explicit-any]
     _self: str
     _className: str
     _id: str
     addresses: List[Address] | None
     applicationIds: List[str] | None
-    attachments: Any
+    attachments: Any  # type: ignore[explicit-any]
     author: str | None
-    comment: Any
-    credentials: Any
+    comment: Any  # type: ignore[explicit-any]
+    credentials: Any  # type: ignore[explicit-any]
     displayName: str
     electronicServices: List[ElectronicService] | None
     identifications: List[Identification]
     names: List[Name]
-    speciality: Any
+    speciality: Any  # type: ignore[explicit-any]
     telecoms: List[Telecom] | None
     timestamp: str
-    type: Any
+    type: Any  # type: ignore[explicit-any]
     types: List[Type]
     ura: Optional[str]
 

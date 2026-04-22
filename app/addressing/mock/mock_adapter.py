@@ -3,17 +3,16 @@ from pathlib import Path
 import inject
 
 from app.addressing.models import IdentificationType, ZalSearchResponseEntry
-from app.addressing.signing_service import SigningService
+from app.addressing.services import EndpointJWEWrapper
 
 
 class AddressingMockAdapter:
     MOCK_BASE_URL_TAG: str = "%MOCK_BASE_URL%"
 
     @inject.autoparams()
-    def __init__(self, sign_endpoints: bool, mock_base_url: str, signing_service: SigningService) -> None:
-        self.__should_sign_endpoints = sign_endpoints
+    def __init__(self, mock_base_url: str, endpoint_jwe_wrapper: EndpointJWEWrapper) -> None:
         self.__mock_base_url = mock_base_url
-        self.__signing_service = signing_service
+        self.__endpoint_jwe_wrapper = endpoint_jwe_wrapper
 
     def search_by_medmij_name(self, name: str) -> ZalSearchResponseEntry | None:
         return self.__search(name, IdentificationType.medmij)
@@ -47,9 +46,8 @@ class AddressingMockAdapter:
 
     def __augment_endpoints(self, entry: ZalSearchResponseEntry) -> ZalSearchResponseEntry:
         for data_services in entry.dataservices:
-            if self.__should_sign_endpoints:
-                data_services.auth_endpoint = self.__signing_service.sign_endpoint(data_services.auth_endpoint)
-                data_services.token_endpoint = self.__signing_service.sign_endpoint(data_services.token_endpoint)
+            data_services.auth_endpoint = self.__endpoint_jwe_wrapper.wrap(data_services.auth_endpoint)
+            data_services.token_endpoint = self.__endpoint_jwe_wrapper.wrap(data_services.token_endpoint)
 
             for role in data_services.roles:
                 if self.MOCK_BASE_URL_TAG in role.resource_endpoint:
@@ -57,7 +55,6 @@ class AddressingMockAdapter:
                         self.MOCK_BASE_URL_TAG, self.__mock_base_url
                     )
 
-                if self.__should_sign_endpoints:
-                    role.resource_endpoint = self.__signing_service.sign_endpoint(role.resource_endpoint)
+                role.resource_endpoint = self.__endpoint_jwe_wrapper.wrap(role.resource_endpoint)
 
         return entry

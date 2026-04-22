@@ -14,7 +14,7 @@ router = APIRouter()
     summary="Search for organizations based on the search parameters",
     tags=["localization"],
 )
-def read_item(
+def read_item_text_search(
     search: SearchRequest,
     finder: HealthcareFinder = resolve_instance(HealthcareFinder),
 ) -> SearchResponse:

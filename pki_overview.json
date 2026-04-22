@@ -1,0 +1,116 @@
+[
+    {
+        "id": "mgo-localization:60e70d86-9b3e-4bfe-9fe2-a67b0a430e3d",
+        "label": "zorgab mtls client private key",
+        "purpose": "Authenticating MGO Localization when setting up an mTLS connection with ZorgAB.",
+        "specs": {
+            "type": "private-key",
+            "encryption": "RSA",
+            "length": "4096-bit",
+            "format": "pem",
+            "generator": "manual"
+        },
+        "default_path": "secrets/mgo.key",
+        "tags": [
+            "pkio"
+        ]
+    },
+    {
+        "id": "mgo-localization:83b0e94d-4a10-4323-b4b0-b8c2b0e235c0",
+        "label": "zorgab mtls client x509 certificate",
+        "purpose": "Authenticating MGO Localization when setting up an mTLS connection with ZorgAB.",
+        "specs": {
+            "type": "certificate",
+            "encryption": "RSA",
+            "length": "4096-bit",
+            "format": "pem",
+            "generator": "manual"
+        },
+        "default_path": "secrets/mgo.cert",
+        "tags": [
+            "pkio"
+        ]
+    },
+    {
+        "id": "mgo-localization:3f52e9fe-e1a6-4c83-9fa0-567a88e41709",
+        "label": "zorgab mtls CA x509 certificate",
+        "purpose": "Authenticating MGO Localization when setting up an mTLS connection with ZorgAB.",
+        "specs": {
+            "type": "certificate",
+            "encryption": "RSA",
+            "length": "4096-bit",
+            "format": "pem",
+            "generator": "manual"
+        },
+        "default_path": "secrets/mgo.chain",
+        "tags": [
+            "pkio"
+        ]
+    },
+    {
+        "id": "mgo-localization:0ba927fb-2a44-4b72-9a39-996f8601b8c9",
+        "label": "tls server private key",
+        "purpose": "MGO Localization TLS support.",
+        "specs": {
+            "type": "private-key",
+            "encryption": "RSA",
+            "length": "2048-bit",
+            "format": "pem",
+            "generator": "manual"
+        },
+        "default_path": "secrets/ssl/server.key",
+        "tags": []
+    },
+    {
+        "id": "mgo-localization:7c2cc4be-4348-4dbe-8acd-e076f7c847e7",
+        "label": "tls server x509 certificate",
+        "purpose": "MGO Localization TLS support.",
+        "specs": {
+            "type": "certificate",
+            "encryption": "RSA",
+            "length": "2048-bit",
+            "format": "pem",
+            "generator": "manual"
+        },
+        "default_path": "secrets/ssl/server.cert",
+        "tags": []
+    },
+    {
+        "id": "mgo-localization:91c0c8d4-0c53-4c2c-8291-4c6a1b8e017e",
+        "label": "dva target signature validation public key",
+        "purpose": "Validating a JWT signature containing a DVA endpoint as claim created by the MGO Localization app.",
+        "specs": {
+            "type": "public-key",
+            "encryption": "ECC",
+            "length": "256-bit",
+            "format": "pem",
+            "generator": "tools/generate-sign-key.sh"
+        },
+        "default_path": "secrets/public_signing.pem",
+        "tags": []
+    },
+    {
+        "id": "mgo-localization:1c3e5b8a-9c1e-4d2b-9f0a-5e6f7a8b9c0d",
+        "label": "dva target jwt signature validation private key",
+        "purpose": "Signing a JWT containing a DVA endpoint as claim created by the MGO Localization app.",
+        "specs": {
+            "type": "private-key",
+            "encryption": "ECC",
+            "length": "256-bit",
+            "format": "pem",
+            "generator": "tools/generate-sign-key.sh"
+        },
+        "default_path": "secrets/private_signing.key",
+        "tags": []
+    },
+    {
+        "id": "mgo-dvp-proxy:ddd1c679-fdee-499e-88dc-d58ed4bad011",
+        "label": "dva target jwe encryption public key",
+        "purpose": "Encrypting a JWE containing a JWT with DVA endpoint claim created by the MGO Localization app.",
+        "default_path": "secrets/placeholder_jwe_encryption.pub",
+        "tags": [
+            "jwe",
+            "endpoints"
+        ]
+    }
+]

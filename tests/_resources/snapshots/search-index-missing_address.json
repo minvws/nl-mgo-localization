@@ -1,0 +1,22 @@
+[
+    {
+        "id": "agb:87654321",
+        "medmij_id": "missing-address-org",
+        "name": "Scenario: missing address fields",
+        "care_type": "",
+        "city": "",
+        "postal_code": "",
+        "address": null,
+        "geo_lat": null,
+        "geo_lng": null,
+        "search_blob": "Scenario: missing address fields |",
+        "data_services": [
+            {
+                "id": "51",
+                "auth_endpoint": "7",
+                "token_endpoint": "8",
+                "resource_endpoint": "9"
+            }
+        ]
+    }
+]

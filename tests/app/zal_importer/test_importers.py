@@ -44,7 +44,6 @@ class OrganisationListMocks:
     data_service_repository: MockType
     system_role_repository: MockType
     endpoint_repository: MockType
-    signing_service: MockType | None = None
 
 
 @dataclass
@@ -91,8 +90,6 @@ class TestOrganisationListImporter:
         mocker: MockerFixture,
     ) -> OrganisationListMocks:
         mock_logger = mocker.Mock()
-        mock_signing_service = mocker.Mock() if hasattr(request, "param") and request.param else None
-
         org_repo, data_repo, sys_repo, endpoint_repo = _create_mock_repositories(mocker)
 
         importer = OrganisationListImporter(
@@ -101,7 +98,6 @@ class TestOrganisationListImporter:
             system_role_repository=sys_repo,
             endpoint_repository=endpoint_repo,
             logger=mock_logger,
-            signing_service=mock_signing_service,
         )
 
         return OrganisationListMocks(
@@ -110,7 +106,6 @@ class TestOrganisationListImporter:
             data_service_repository=data_repo,
             system_role_repository=sys_repo,
             endpoint_repository=endpoint_repo,
-            signing_service=mock_signing_service,
         )
 
     @fixture
@@ -157,7 +152,7 @@ class TestOrganisationListImporter:
         mocks.system_role_repository.create.assert_has_calls(expected_calls)
 
     def _assert_endpoint_creation(self, mocks: OrganisationListMocks, mocker: MockerFixture) -> None:
-        expected_calls = [mocker.call(url=url, signature=None) for url in TEST_URLS]
+        expected_calls = [mocker.call(url=url) for url in TEST_URLS]
         mocks.endpoint_repository.create.assert_has_calls(expected_calls)
 
     def test_process_xml_successfully_processes_xml(
@@ -174,30 +169,6 @@ class TestOrganisationListImporter:
         self._assert_data_service_creation(mocks, mocker)
         self._assert_system_role_creation(mocks, mocker)
         self._assert_endpoint_creation(mocks, mocker)
-
-    @mark.parametrize("mocks", [True], indirect=True)
-    def test_process_xml_signs_endpoints_if_signing_service_is_provided(
-        self,
-        mocker: MockerFixture,
-        mocks: OrganisationListMocks,
-        xml_traverser: ElementTraverser,
-    ) -> None:
-        if mocks.signing_service is None:
-            raise ValueError("Mock `SigningService` is required")
-
-        signatures = [f"signature{i}" for i in range(1, 11)]
-        mock_endpoints = [mocker.Mock() for _ in range(10)]
-
-        mocks.signing_service.generate_signature.side_effect = signatures
-        mocks.endpoint_repository.find_one_by_url.side_effect = mock_endpoints
-
-        mocks.importer.process_xml(xml_traverser)
-
-        expected_signature_calls = [mocker.call(url) for url in TEST_URLS]
-        mocks.signing_service.generate_signature.assert_has_calls(expected_signature_calls)
-
-        for endpoint, signature in zip(mock_endpoints, signatures, strict=True):
-            assert endpoint.signature == signature
 
     def test_process_xml_fails_when_import_reference_already_exists(
         self,
@@ -242,6 +213,25 @@ class TestOrganisationListImporter:
 
         with raises(ValueError, match=expected_error):
             mocks.importer.process_xml(test_traverser)
+
+    def test_process_xml_reuses_existing_endpoints(
+        self,
+        mocker: MockerFixture,
+        mocks: OrganisationListMocks,
+        xml_traverser: ElementTraverser,
+    ) -> None:
+        self._setup_successful_processing_mocks(mocks)
+
+        existing_endpoints = [mocker.Mock(id=i) for i in range(10, 20)]
+        mocks.endpoint_repository.find_one_by_url.side_effect = existing_endpoints
+
+        mocks.importer.process_xml(xml_traverser)
+
+        self._assert_organisation_creation(mocks, mocker)
+        self._assert_data_service_creation(mocks, mocker)
+        self._assert_system_role_creation(mocks, mocker)
+
+        mocks.endpoint_repository.create.assert_not_called()
 
 
 class TestOrganisationJoinListImporter:

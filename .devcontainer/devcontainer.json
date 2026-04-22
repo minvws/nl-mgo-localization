@@ -8,13 +8,6 @@
     "workspaceFolder": "/src",
     "shutdownAction": "stopCompose",
     "remoteUser": "app",
-    "mounts": [
-        "source=${localEnv:HOME}${localEnv:USERPROFILE}/.gnupg,target=/home/app/.gnupg,type=bind"
-    ],
-    "features": {
-        "ghcr.io/devcontainers-contrib/features/pre-commit:2": {}
-    },
-    "postCreateCommand": "pre-commit install",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -27,7 +20,7 @@
                 "mtxr.sqltools-driver-pg"
             ],
             "settings": {
-                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.defaultInterpreterPath": "/opt/venv/bin/python",
                 "python.testing.pytestEnabled": true,
                 "[python]": {
                     "editor.formatOnSave": true,

@@ -25,7 +25,7 @@ runs:
 
         - name: Create tar
           shell: bash
-          run: tar -czf ${{ env.PACKAGE_FILE_NAME }}.tar.gz app docs sql static tools version.json HOSTING_CHANGELOG.md app.conf.example
+          run: tar -czf ${{ env.PACKAGE_FILE_NAME }}.tar.gz app docs sql static tools version.json HOSTING_CHANGELOG.md app.conf.example resources/search_index
 
         - name: Upload release tar
           uses: actions/upload-artifact@v4

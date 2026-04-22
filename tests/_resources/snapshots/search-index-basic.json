@@ -1,0 +1,22 @@
+[
+    {
+        "id": "agb:11111111",
+        "medmij_id": "basic-org",
+        "name": "Scenario: basic organization",
+        "care_type": "",
+        "city": "utrecht",
+        "postal_code": "3528BD",
+        "address": "Poststreet 1005",
+        "geo_lat": null,
+        "geo_lng": null,
+        "search_blob": "Scenario: basic organization utrecht | 3528BD | Poststreet 1005",
+        "data_services": [
+            {
+                "id": "48",
+                "auth_endpoint": "1",
+                "token_endpoint": "2",
+                "resource_endpoint": "3"
+            }
+        ]
+    }
+]

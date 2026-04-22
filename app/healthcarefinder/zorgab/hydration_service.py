@@ -1,5 +1,5 @@
 from logging import Logger
-from typing import Any, List, Tuple
+from typing import Any, Callable, List, Tuple
 from uuid import uuid4
 
 from fhir.resources.STU3.address import Address as FhirAddress
@@ -11,9 +11,14 @@ from pydantic import ValidationError
 
 from app.addressing.addressing_service import AddressingService
 from app.addressing.models import ZalSearchResponseEntry
+from app.fhir_uris import (
+    FHIR_NAMINGSYSTEM_AGB_Z,
+    FHIR_NAMINGSYSTEM_URA,
+    FHIR_STRUCTUREDEFINITION_GEOLOCATION,
+    MEDMIJ_ID_MEDMIJNAAM,
+    VZVZ_NAMINGSYSTEM_KVK,
+)
 from app.healthcarefinder.models import Address, CType, GeoLocation, Identification, Organization
-
-DEFINITION_GEOLOCATION = "hl7.org/fhir/StructureDefinition/geolocation"
 
 
 class HydrationService:
@@ -34,7 +39,7 @@ class HydrationService:
 
         load_organization = Organization(
             medmij_id=data_service_entry.medmij_id if data_service_entry else None,
-            display_name=fhir_organization.name,  # type: ignore[arg-type] # always present since 'name' is a mandatory search field
+            display_name=fhir_organization.name,
             identification=str(identification),
             addresses=[],
             types=[],
@@ -47,53 +52,69 @@ class HydrationService:
 
         return load_organization
 
-    def _get_organization_identifier(self, fhir_org: FhirOrganization) -> Tuple[ZalSearchResponseEntry | None, str]:
+    def _get_organization_identifier(
+        self, fhir_organization: FhirOrganization
+    ) -> Tuple[ZalSearchResponseEntry | None, str]:
+        # Preferred order of identifier systems
+        preferred_systems: list[tuple[str, str, Callable[[str], ZalSearchResponseEntry | None]]] = [
+            ("agb-z", FHIR_NAMINGSYSTEM_AGB_Z, self.__addressing_service.search_by_agb),
+            ("ura", FHIR_NAMINGSYSTEM_URA, self.__addressing_service.search_by_ura),
+            ("medmij", MEDMIJ_ID_MEDMIJNAAM, self.__addressing_service.search_by_medmij_name),
+            ("kvk", VZVZ_NAMINGSYSTEM_KVK, self.__addressing_service.search_by_kvk),
+        ]
+
+        system_to_identifier = self._build_identifier_lookup(fhir_organization)
+        if not system_to_identifier:
+            # Fallback to a random UUID (the clients expect an identifier that is not present in the FHIR response):
+            return None, str(uuid4())
+
         identifier_type = None
         identifier_value = None
         data_service_entry = None
 
-        if fhir_org.identifier is None:
-            # Fallback to a random UUID (the clients expect an identifier that is not present in the FHIR response):
-            random_uuid = str(uuid4())
-            return data_service_entry, random_uuid
-
-        for obj in fhir_org.identifier:
-            identifier = Identifier.model_validate(obj)
-
-            if identifier.value is None or identifier.system is None:
+        for type_key, system_url, search_fn in preferred_systems:
+            preferred_identifier = system_to_identifier.get(system_url)
+            if preferred_identifier is None or preferred_identifier.value is None:
                 continue
+            identifier_type = type_key
+            identifier_value = preferred_identifier.value
+            data_service_entry = search_fn(identifier_value)
 
-            identifier_value = identifier.value
+            if data_service_entry is not None:
+                break
 
-            if identifier.system == "http://fhir.nl/fhir/NamingSystem/agb-z":
-                identifier_type = "agb-z"
-                data_service_entry = self.__addressing_service.search_by_agb(identifier_value)
-            elif identifier.system == "http://fhir.nl/fhir/NamingSystem/ura":
-                identifier_type = "ura"
-                data_service_entry = self.__addressing_service.search_by_ura(identifier_value)
-            elif identifier.system == "http://www.medmij.nl/id/medmijnaam":
-                identifier_type = "medmij"
-                data_service_entry = self.__addressing_service.search_by_medmij_name(identifier_value)
-            elif identifier.system == "http://www.vzvz.nl/fhir/NamingSystem/kvk":
-                identifier_type = "kvk"
-                data_service_entry = self.__addressing_service.search_by_kvk(identifier_value)
-            # @todo: HRN is not yet supported in the FHIR Organization resource
+        # If no preferred identifier found, fallback to UUID
+        if identifier_type is None or identifier_value is None:
+            return None, str(uuid4())
 
         identification = Identification(identification_type=identifier_type, identification_value=identifier_value)
-
         return data_service_entry, str(identification)
 
-    def _get_organization_addresses(self, fhir_org: FhirOrganization, load_org: Organization) -> None:
-        if fhir_org.address is None:
+    def _build_identifier_lookup(self, fhir_organization: FhirOrganization) -> dict[str, Identifier]:
+        if fhir_organization.identifier is None:
+            return {}
+
+        # Build a lookup of system -> identifier
+        system_to_identifier: dict[str, Identifier] = {}
+        for obj in fhir_organization.identifier:
+            parsed_identifier = Identifier.model_validate(obj)
+            if parsed_identifier.value is None or parsed_identifier.system is None:
+                continue
+            system_to_identifier[parsed_identifier.system] = parsed_identifier
+
+        return system_to_identifier
+
+    def _get_organization_addresses(self, fhir_organization: FhirOrganization, load_org: Organization) -> None:
+        if fhir_organization.address is None:
             return
 
-        for addr_entry in fhir_org.address:
+        for addr_entry in fhir_organization.address:
             fhir_address = FhirAddress.model_validate(addr_entry)
 
             geo = None
 
             if fhir_address.extension:
-                geo_ext = self._find_extension(fhir_address.extension, DEFINITION_GEOLOCATION)
+                geo_ext = self._find_extension(fhir_address.extension, FHIR_STRUCTUREDEFINITION_GEOLOCATION)
                 if geo_ext:
                     lat = self._find_extension(geo_ext.extension, "latitude")
                     lon = self._find_extension(geo_ext.extension, "longitude")
@@ -105,18 +126,18 @@ class HydrationService:
                     active=True,
                     address=fhir_address.text,
                     lines=[str(line) for line in fhir_address.line or []],
-                    city=fhir_address.city,  # type: ignore[arg-type] # always present since 'city' is a mandatory search field
+                    city=fhir_address.city or None,
                     country=fhir_address.country,
                     geolocation=geo,
                     postalcode=fhir_address.postalCode,
                 )
             )
 
-    def _get_organization_types(self, fhir_org: FhirOrganization, load_organization: Organization) -> None:
-        if fhir_org.type is None:
+    def _get_organization_types(self, fhir_organization: FhirOrganization, load_organization: Organization) -> None:
+        if fhir_organization.type is None:
             return
 
-        for type_entry in fhir_org.type:
+        for type_entry in fhir_organization.type:
             try:
                 cc_entry = CodeableConcept.model_validate(type_entry)
                 if cc_entry.coding is None or len(cc_entry.coding) == 0:
@@ -133,7 +154,7 @@ class HydrationService:
                 )
             )
 
-    def _find_extension(self, extensions: List[Any], url: str) -> Any | None:
+    def _find_extension(self, extensions: List[Any], url: str) -> Any | None:  # type: ignore[explicit-any]
         """
         Find an extension by URL in a list of extensions.
 

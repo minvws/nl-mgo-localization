@@ -1,7 +1,5 @@
 import json
-from base64 import b64encode
 from datetime import datetime
-from os import urandom
 from typing import List
 
 from faker import Faker
@@ -10,7 +8,7 @@ from pytest import mark
 from app.db.models import DataService, Endpoint, IdentifyingFeature, Organisation
 from app.db.repositories import (
     DataServiceRepository,
-    EndpointRepository,
+    DbEndpointRepository,
     IdentifyingFeatureRepository,
     OrganisationRepository,
     SystemRoleRepository,
@@ -82,16 +80,12 @@ def create_data_service(
 
 
 def create_endpoint(
-    repository: EndpointRepository,
+    repository: DbEndpointRepository,
     faker: Faker,
     url: str | None = None,
-    signature: str | None = None,
-) -> tuple[str, str, Endpoint]:
-    return (
-        url := url or faker.url(),
-        signature := signature or b64encode(urandom(32)).decode("utf-8"),
-        repository.create(url=url, signature=signature, persist=False),
-    )
+) -> tuple[str, Endpoint]:
+    endpoint = repository.create(url=url or faker.url(), persist=False)
+    return endpoint.url, endpoint
 
 
 @mark.usefixtures("organisation_repository", "identifying_feature_repository")
@@ -310,12 +304,12 @@ class TestDataServiceRepository:
         self,
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         organisation = create_organisation(organisation_repository, faker)[3]
-        auth_endpoint = create_endpoint(endpoint_repository, faker)[2]
-        token_endpoint = create_endpoint(endpoint_repository, faker)[2]
+        auth_endpoint = create_endpoint(endpoint_repository, faker)[1]
+        token_endpoint = create_endpoint(endpoint_repository, faker)[1]
         (
             external_id,
             name,
@@ -336,11 +330,11 @@ class TestDataServiceRepository:
         self,
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         organisation = create_organisation(organisation_repository, faker)[3]
-        endpoint = create_endpoint(endpoint_repository, faker)[2]
+        endpoint = create_endpoint(endpoint_repository, faker)[1]
         (
             external_id,
             _,
@@ -357,11 +351,11 @@ class TestDataServiceRepository:
         self,
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         organisation = create_organisation(organisation_repository, faker)[3]
-        endpoint = create_endpoint(endpoint_repository, faker)[2]
+        endpoint = create_endpoint(endpoint_repository, faker)[1]
         external_id = create_data_service(data_service_repository, faker, organisation.id, endpoint.id, endpoint.id)[0]
 
         result = data_service_repository.find_one_by_organisation_and_external_id(organisation.id + 1, external_id)
@@ -372,11 +366,11 @@ class TestDataServiceRepository:
         self,
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         organisation = create_organisation(organisation_repository, faker)[3]
-        endpoint = create_endpoint(endpoint_repository, faker)[2]
+        endpoint = create_endpoint(endpoint_repository, faker)[1]
         create_data_service(data_service_repository, faker, organisation.id, endpoint.id, endpoint.id)
 
         result = data_service_repository.find_one_by_organisation_and_external_id(
@@ -389,12 +383,12 @@ class TestDataServiceRepository:
         self,
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         target_organisation = create_organisation(organisation_repository, faker)[3]
         other_organisation = create_organisation(organisation_repository, faker)[3]
-        endpoint = create_endpoint(endpoint_repository, faker)[2]
+        endpoint = create_endpoint(endpoint_repository, faker)[1]
         target_data_service_0 = create_data_service(
             data_service_repository,
             faker,
@@ -422,13 +416,13 @@ class TestSystemRoleRepository:
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
         system_role_repository: SystemRoleRepository,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         organisation = create_organisation(organisation_repository, faker)[3]
-        auth_endpoint = create_endpoint(endpoint_repository, faker)[2]
-        token_endpoint = create_endpoint(endpoint_repository, faker)[2]
-        resource_endpoint = create_endpoint(endpoint_repository, faker)[2]
+        auth_endpoint = create_endpoint(endpoint_repository, faker)[1]
+        token_endpoint = create_endpoint(endpoint_repository, faker)[1]
+        resource_endpoint = create_endpoint(endpoint_repository, faker)[1]
         data_service = create_data_service(
             data_service_repository, faker, organisation.id, auth_endpoint.id, token_endpoint.id
         )[3]
@@ -499,24 +493,23 @@ class TestIdentifyingFeatureRepository:
 
 
 @mark.usefixtures("endpoint_repository")
-class TestEndpointRepository:
+class TestDbEndpointRepository:
     def test_create_stores_endpoint(
         self,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
-        url, signature, result = create_endpoint(endpoint_repository, faker)
+        url, result = create_endpoint(endpoint_repository, faker)
 
         assert result.id > 0
         assert result.url == url
-        assert result.signature == signature
 
     def test_find_one_by_url_returns_matching_endpoint(
         self,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
-        url, _, endpoint = create_endpoint(endpoint_repository, faker)
+        url, endpoint = create_endpoint(endpoint_repository, faker)
 
         result = endpoint_repository.find_one_by_url(url)
 
@@ -525,7 +518,7 @@ class TestEndpointRepository:
 
     def test_find_one_by_url_returns_none_if_no_matching_url(
         self,
-        endpoint_repository: EndpointRepository,
+        endpoint_repository: DbEndpointRepository,
         faker: Faker,
     ) -> None:
         create_endpoint(endpoint_repository, faker, "foo")
@@ -534,7 +527,7 @@ class TestEndpointRepository:
 
         assert result is None
 
-    def test_find_all_returns_all_endpoints(self, endpoint_repository: EndpointRepository, faker: Faker) -> None:
+    def test_find_all_returns_all_endpoints(self, endpoint_repository: DbEndpointRepository, faker: Faker) -> None:
         create_endpoint(endpoint_repository, faker)
         create_endpoint(endpoint_repository, faker)
         create_endpoint(endpoint_repository, faker)

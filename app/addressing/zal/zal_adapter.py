@@ -8,8 +8,8 @@ from app.addressing.models import (
     ZalDataServiceRoleResponse,
     ZalSearchResponseEntry,
 )
-from app.addressing.schemas import SignedUrl
-from app.db.models import Endpoint, Organisation
+from app.addressing.services import EndpointJWEWrapper
+from app.db.models import Organisation
 from app.db.repositories import DataServiceRepository, OrganisationRepository
 from app.zal_importer.enums import IdentifyingFeatureType
 
@@ -20,11 +20,11 @@ class AddressingZalAdapter:
         self,
         organisation_repository: OrganisationRepository,
         data_service_repository: DataServiceRepository,
-        sign_endpoints: bool,
+        endpoint_jwe_wrapper: EndpointJWEWrapper,
     ) -> None:
         self.organisation_repository = organisation_repository
         self.data_service_repository = data_service_repository
-        self.__should_sign_endpoints = sign_endpoints
+        self.__endpoint_jwe_wrapper = endpoint_jwe_wrapper
 
     def search_by_medmij_name(self, name: str) -> ZalSearchResponseEntry | None:
         entry = self.organisation_repository.find_one_by_name(name)
@@ -59,15 +59,15 @@ class AddressingZalAdapter:
             ZalDataServiceResponse(
                 id=data_service.external_id,
                 name=data_service.name,
-                interface_versions=json.loads(data_service.interface_versions)
-                if data_service.interface_versions
-                else [],
-                auth_endpoint=self.__get_endpoint_url(data_service.auth_endpoint),
-                token_endpoint=self.__get_endpoint_url(data_service.token_endpoint),
+                interface_versions=(
+                    json.loads(data_service.interface_versions) if data_service.interface_versions else []
+                ),
+                auth_endpoint=self.__endpoint_jwe_wrapper.wrap(data_service.auth_endpoint.url),
+                token_endpoint=self.__endpoint_jwe_wrapper.wrap(data_service.token_endpoint.url),
                 roles=[
                     ZalDataServiceRoleResponse(
                         code=system_role.code,
-                        resource_endpoint=self.__get_endpoint_url(system_role.resource_endpoint),
+                        resource_endpoint=self.__endpoint_jwe_wrapper.wrap(system_role.resource_endpoint.url),
                     )
                     for system_role in data_service.roles
                 ],
@@ -82,9 +82,3 @@ class AddressingZalAdapter:
             id_value=id_value,
             dataservices=dataservices,
         )
-
-    def __get_endpoint_url(self, endpoint: Endpoint) -> str:
-        if not self.__should_sign_endpoints or endpoint.signature is None:
-            return endpoint.url
-
-        return str(SignedUrl.create(url=endpoint.url, signature=endpoint.signature))

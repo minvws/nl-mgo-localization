@@ -1,10 +1,9 @@
-from typing import Any, Dict
-
 from fastapi import APIRouter
 
 from app.db.db import Database
 from app.healthcarefinder.interface import HealthcareFinderAdapter
 from app.healthcarefinder.zorgab.zorgab import ZorgABAdapter
+from app.routers.schemas import HealthResponse
 from app.utils import resolve_instance
 
 router = APIRouter()
@@ -17,8 +16,8 @@ router = APIRouter()
 def health(
     db: Database = resolve_instance(Database),
     healthcare_finder_adapter: HealthcareFinderAdapter = resolve_instance(HealthcareFinderAdapter),
-) -> dict[str, Any]:
-    response: Dict[str, Any] = {
+) -> HealthResponse:
+    response: HealthResponse = {
         "healthy": True,
         "externals": {
             "database": db.is_healthy(),

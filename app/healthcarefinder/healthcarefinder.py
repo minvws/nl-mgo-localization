@@ -1,8 +1,8 @@
 import inject
 
-from app.healthcarefinder.interface import HealthcareFinderAdapter
-from app.healthcarefinder.mock.adapter import MockHealthcareFinderAdapter
-from app.healthcarefinder.models import SearchRequest, SearchResponse
+from .interface import HealthcareFinderAdapter
+from .mock.adapter import MockHealthcareFinderAdapter
+from .models import SearchRequest, SearchResponse
 
 
 class HealthcareFinder:
@@ -18,10 +18,15 @@ class HealthcareFinder:
         self.__allow_search_bypass = allow_search_bypass
 
     def search_organizations(self, search: SearchRequest) -> SearchResponse | None:
-        if self.__allow_search_bypass and self.__is_search_bypass_requested(search=search):
+        if self.__allow_search_bypass and self.__is_search_bypass_requested(search):
             return self.__mock_adapter.search_organizations(search=search)
-
         return self.__adapter.search_organizations(search=search)
 
     def __is_search_bypass_requested(self, search: SearchRequest) -> bool:
-        return search.name.lower() == "test" and search.city.lower() == "test"
+        name = search.name
+        city = search.city
+
+        if name is None or city is None:
+            return False
+
+        return name.lower() == "test" and city.lower() == "test"

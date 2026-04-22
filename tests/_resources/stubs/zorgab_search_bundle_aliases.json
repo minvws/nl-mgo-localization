@@ -1,0 +1,40 @@
+{
+    "resourceType": "Bundle",
+    "type": "searchset",
+    "total": 1,
+    "entry": [
+        {
+            "resource": {
+                "resourceType": "Organization",
+                "id": "scenario-aliases",
+                "name": "Scenario: with aliases",
+                "alias": [
+                    "Alias 1",
+                    "Scenario: with aliases",
+                    "ALIAS 1"
+                ],
+                "identifier": [
+                    {
+                        "system": "http://fhir.nl/fhir/NamingSystem/ura",
+                        "value": "12345678"
+                    },
+                    {
+                        "system": "http://www.vzvz.nl/fhir/NamingSystem/agb",
+                        "value": "12344321"
+                    }
+                ],
+                "address": [
+                    {
+                        "city": "Amsterdam",
+                        "postalCode": "1000 AA",
+                        "line": [
+                            "Aliasstraat 1"
+                        ],
+                        "type": "physical",
+                        "use": "work"
+                    }
+                ]
+            }
+        }
+    ]
+}

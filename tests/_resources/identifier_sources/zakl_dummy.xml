@@ -1,0 +1,21 @@
+<Zorgaanbiederskoppellijst xmlns="xmlns://afsprakenstelsel.medmij.nl/Zorgaanbiederskoppellijst/release1/">
+    <Zorgaanbieders>
+        <Zorgaanbieder>
+            <IdentificerendeKenmerken>
+                <IdentificerendKenmerk>
+                    <URA>12345678</URA>
+                </IdentificerendKenmerk>
+                <IdentificerendKenmerk>
+                    <AGB>87654321</AGB>
+                </IdentificerendKenmerk>
+            </IdentificerendeKenmerken>
+        </Zorgaanbieder>
+        <Zorgaanbieder>
+            <IdentificerendeKenmerken>
+                <IdentificerendKenmerk>
+                    <AGB>99999999</AGB>
+                </IdentificerendKenmerk>
+            </IdentificerendeKenmerken>
+        </Zorgaanbieder>
+    </Zorgaanbieders>
+</Zorgaanbiederskoppellijst>

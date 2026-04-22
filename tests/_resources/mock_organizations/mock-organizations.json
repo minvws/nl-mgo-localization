@@ -1,0 +1,20 @@
+[
+    {
+        "id": "agb:99999997",
+        "medmij_id": "medmij.ontwikkel.verplicht.interoplab",
+        "name": "Interoplab Hospital",
+        "data_services": [
+            {
+                "id": "48",
+                "auth_endpoint": "9999999990000001",
+                "token_endpoint": "9999999990000002",
+                "resource_endpoint": "9999999990000003"
+            }
+        ]
+    },
+    {
+        "id": "agb:99999998",
+        "name": "Mock Zonder Dataservice",
+        "data_services": []
+    }
+]

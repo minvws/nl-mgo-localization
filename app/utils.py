@@ -3,7 +3,6 @@ from typing import Any
 
 import inject
 from fastapi import Depends
-from inject import Injectable
 
 
 def root_path(*args: str) -> str:
@@ -22,7 +21,7 @@ def root_path(*args: str) -> str:
     )
 
 
-def resolve_instance(cls: Any) -> Any:
+def resolve_instance(cls: Any) -> Any:  # type: ignore[explicit-any]
     """
     Resolves an instance using the `inject` dependency injection package for integration
     with FastAPI's dependency injection system.
@@ -31,7 +30,7 @@ def resolve_instance(cls: Any) -> Any:
     want to resolve a dependency using the more powerful `inject` package.
     """
 
-    def get_instance() -> Injectable:
+    def get_instance() -> Any:  # type: ignore[explicit-any]
         return inject.instance(cls)
 
     return Depends(get_instance)

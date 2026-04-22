@@ -22,7 +22,7 @@ This endpoint will return a list of data services provided by the DVA of that he
                     "type": "https://www.vzvz.nl/fhir/NamingSystem/vektis-zorgsoort"
                 }
             ],
-    "datas_services": [
+    "data_services": [
          {
             "id": "49",
             "name": "Huisartsgegevens",
