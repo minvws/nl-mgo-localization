@@ -7,7 +7,7 @@ from pytest_mock import MockerFixture
 from app.addressing.models import IdentificationType
 from app.zorgab_scraper.config import ZorgABScraperConfig
 from app.zorgab_scraper.models import Identifier
-from app.zorgab_scraper.services import AgbCsvIdentifierRepository, ZaklXmlIdentifierRepository
+from app.zorgab_scraper.repositories import AgbCsvIdentifierRepository, ZaklXmlIdentifierRepository
 
 
 def _write_xml(tmp_path: Path, content: str) -> Path:
@@ -128,7 +128,7 @@ class TestAgbCsvIdentifierRepository:
             f"2,22222222,20010101,{invalid_date}\n"
         )
 
-        logger = mocker.patch("app.zorgab_scraper.services.logger")
+        logger = mocker.patch("app.zorgab_scraper.repositories.logger")
         config = mocker.Mock(spec=ZorgABScraperConfig)
         config.agb_csv_path = _write_csv(tmp_path, csv_content)
 

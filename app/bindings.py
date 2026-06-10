@@ -2,6 +2,10 @@ import logging
 
 import inject
 from inject import Binder
+from mgo_keystore_repositories import (
+    FilesystemJWKRepository as FilesystemJWKStoreRepository,
+)
+from mgo_keystore_repositories import JWKRepository as KeyStoreRepository
 from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from app.addressing.factories import EndpointJWEFactory, EndpointJWTFactory
@@ -22,22 +26,21 @@ from app.search_indexation.constants import (
 from app.search_indexation.repositories import (
     EncryptedEndpointsFileRepository,
     EncryptedEndpointsRepository,
+    FilesystemSearchIndexStreamRepository,
     MockEndpointsRepository,
-    MockOrganizationsFileRepo,
-    SearchIndexFileRepository,
-    SearchIndexRepository,
+    MockOrganizationMergerDecorator,
+    MockOrganizationRepository,
+    SearchIndexStreamRepository,
 )
-from app.search_indexation.services import MockOrganizationsMerger
 from app.zorgab_scraper.config import IdentifierSource, ZorgABScraperConfig
-from app.zorgab_scraper.services import (
+from app.zorgab_scraper.repositories import (
     AgbCsvIdentifierRepository,
-    IdentifierProvider,
     ZaklXmlIdentifierRepository,
 )
+from app.zorgab_scraper.services import IdentifierProvider
 
 from .addressing.addressing_service import AddressingAdapter
 from .addressing.mock.mock_adapter import AddressingMockAdapter
-from .addressing.repositories import FilesystemJWKStoreRepository, KeyStoreRepository
 from .addressing.zal.zal_adapter import AddressingZalAdapter
 from .config.models import AddressingAdapterType, Config, HealthcareAdapterType
 from .db.db import Database
@@ -72,9 +75,9 @@ def configure_bindings(binder: Binder, config: Config) -> None:
     __bind_benchmark_services(binder)
     __bind_identifier_provider(binder)
     __bind_key_repository(binder, config)
+    __bind_mock_organization_repository(binder, config)
     __bind_search_index_repositories(binder, config)
     __bind_endpoint_repository(binder, config)
-    __bind_mock_organization_services(binder, config)
 
 
 def __bind_logger(binder: Binder, config: Config) -> logging.Logger:
@@ -191,13 +194,33 @@ def __bind_identifier_provider(binder: Binder) -> None:
     )
 
 
-def __bind_search_index_repositories(binder: Binder, config: Config) -> None:
+def __bind_mock_organization_repository(binder: Binder, config: Config) -> None:
     binder.bind_to_constructor(
-        SearchIndexRepository,
-        lambda: SearchIndexFileRepository(
+        MockOrganizationRepository,
+        lambda: MockOrganizationRepository(
+            mock_organizations_path=config.search_indexation.mock_organizations_path,
+            mock_addressing_path=config.search_indexation.mock_addressing_path,
+        ),
+    )
+
+
+def __bind_search_index_repositories(binder: Binder, config: Config) -> None:
+    def resolve_search_index_repository() -> SearchIndexStreamRepository:
+        repository = FilesystemSearchIndexStreamRepository(
             output_path=SEARCH_INDEX_OUTPUT_DIR / SEARCH_INDEX_OUTPUT_FILENAME,
             temp_path=SEARCH_INDEX_TEMP_DIR,
-        ),
+        )
+
+        if config.search_indexation.include_mock_organizations:
+            repository = MockOrganizationMergerDecorator(
+                decorated=repository,
+            )
+
+        return repository
+
+    binder.bind_to_constructor(
+        SearchIndexStreamRepository,
+        resolve_search_index_repository,
     )
 
     binder.bind_to_constructor(
@@ -224,21 +247,4 @@ def __bind_endpoint_repository(binder: Binder, config: Config) -> None:
     binder.bind_to_constructor(
         EndpointRepository,
         provide_endpoint_repository,
-    )
-
-
-def __bind_mock_organization_services(binder: Binder, config: Config) -> None:
-    binder.bind_to_constructor(
-        MockOrganizationsFileRepo,
-        lambda: MockOrganizationsFileRepo(
-            mock_organizations_path=config.search_indexation.mock_organizations_path,
-            mock_addressing_path=config.search_indexation.mock_addressing_path,
-        ),
-    )
-
-    binder.bind_to_constructor(
-        MockOrganizationsMerger,
-        lambda: MockOrganizationsMerger(
-            should_include_mock_organizations=config.search_indexation.include_mock_organizations,
-        ),
     )

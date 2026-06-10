@@ -34,7 +34,7 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
         organizations: list[Organization] = []
 
         organizations.append(
-            self.create_organization(self.get_ziekenhuis_de_ziekenboeg_data()),
+            self.create_organization(self.get_ziekenhuis_nieuw_juinen_data()),
         )
         organizations.append(
             self.create_organization(self.get_huisartsenpraktijk_de_huisarts_data()),
@@ -137,7 +137,7 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
             roles.append(role)
         return roles
 
-    def get_ziekenhuis_de_ziekenboeg_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
+    def get_ziekenhuis_nieuw_juinen_data(self) -> dict[str, Any]:  # type: ignore[explicit-any]
         return {
             "display_name": "Ziekenhuis Nieuw Juinen",
             "identification_type": "demo",
@@ -193,6 +193,19 @@ class DemoHealthCareFinderAdapter(HealthcareFinderAdapter):
                             "code": "MM-3.0-PDB-FHIR",
                             "resource_endpoint": self.__build_mock_url("/51"),
                         },
+                    ],
+                },
+                {
+                    "id": "9000002",
+                    "name": "BeeldBeschikbaarheid",
+                    "interface_versions": ["2"],
+                    "auth_endpoint": self.__build_mock_url("/authorize"),
+                    "token_endpoint": self.__build_mock_url("/token"),
+                    "roles": [
+                        {
+                            "code": "MM-1.0-TDB-FHIR",
+                            "resource_endpoint": self.__build_mock_url("/9000002"),
+                        }
                     ],
                 },
             ],

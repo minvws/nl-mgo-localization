@@ -4,7 +4,7 @@ from fhir.resources.STU3.organization import Organization as FhirOrganization
 from pytest_mock import MockerFixture
 
 from app.addressing.models import IdentificationType
-from app.zorgab_scraper.models import Identifier
+from app.zorgab_scraper.models import Identifier, OrganizationBundleEntry
 from app.zorgab_scraper.services import ZorgabScrapeExecutor
 
 
@@ -30,8 +30,11 @@ class TestZorgabScrapeExecutor:
         adapter.search_organizations_raw_fhir.return_value = bundle
 
         result = executor.execute(identifiers=identifiers, workers=1)
+        bundle_entries = list(result.bundle_entries)
 
-        assert bundle in result.bundles
+        assert len(bundle_entries) == 1
+        assert bundle_entries[0].full_url == "https://example.com/Organization/org-123"
+        assert isinstance(bundle_entries[0], OrganizationBundleEntry)
         assert result.not_found == []
         assert result.errors == []
 
@@ -42,10 +45,11 @@ class TestZorgabScrapeExecutor:
         adapter.search_organizations_raw_fhir.return_value = None
 
         result = executor.execute(identifiers=identifiers, workers=1)
+        bundle_entries = list(result.bundle_entries)
 
         search_request = adapter.search_organizations_raw_fhir.call_args.args[0]
         assert search_request.agb == "456"
-        assert result.bundles == []
+        assert bundle_entries == []
         assert result.not_found == ["AGB-Z:456"]
 
     def test_execute_records_not_found_when_response_missing(self, mocker: MockerFixture) -> None:
@@ -59,7 +63,7 @@ class TestZorgabScrapeExecutor:
 
         result = executor.execute(identifiers=identifiers, workers=1)
 
-        assert result.bundles == []
+        assert list(result.bundle_entries) == []
         assert result.not_found == ["URA:789"]
         assert result.errors == []
         logger.debug.assert_any_call("No organizations found for %s", "URA:789")
@@ -74,7 +78,7 @@ class TestZorgabScrapeExecutor:
 
         result = executor.execute(identifiers=identifiers, workers=2)
 
-        assert result.bundles == []
+        assert list(result.bundle_entries) == []
         assert result.not_found == []
         assert result.errors == ["URA:999: boom"]
         logger.exception.assert_called_once()
@@ -102,7 +106,7 @@ class TestZorgabScrapeExecutor:
         )
         adapter.search_organizations_raw_fhir.return_value = bundle
 
-        executor.execute(identifiers=identifiers, workers=1)
+        list(executor.execute(identifiers=identifiers, workers=1).bundle_entries)
 
         logger.debug.assert_any_call("Multiple organizations returned for %s: %d", "URA:123", 2)
 
@@ -119,8 +123,9 @@ class TestZorgabScrapeExecutor:
         adapter.search_organizations_raw_fhir.return_value = bundle
 
         result = executor.execute(identifiers=identifiers, workers=1)
+        bundle_entries = list(result.bundle_entries)
 
-        assert bundle in result.bundles
+        assert len(bundle_entries) == 1
         assert result.not_found == []
         assert result.errors == []
         assert not any("Multiple organizations" in str(call) for call in logger.debug.call_args_list)

@@ -1,20 +1,19 @@
 import logging
 from argparse import Namespace
+from collections.abc import Iterator
 
 import inject
-from fhir.resources.STU3.bundle import Bundle
 
 from app.cron.arg_types import ListType
 from app.cron.utils import SubParsers
-from app.normalization.bundle import BundleNormalizer
 from app.normalization.models import NormalizedOrganization
-from app.search_indexation.models import SearchIndex
-from app.search_indexation.repositories import EncryptedEndpointsRepository, SearchIndexRepository
+from app.normalization.organization_normalizer import OrganizationNormalizer
+from app.search_indexation.repositories import EncryptedEndpointsRepository, SearchIndexStreamRepository
 from app.search_indexation.services import (
     EncryptedEndpointProvider,
-    MockOrganizationsMerger,
 )
 from app.zorgab_scraper.config import IdentifierSource
+from app.zorgab_scraper.models import OrganizationBundleEntry
 from app.zorgab_scraper.scraper import ZorgabScraper
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ class UpdateSearchIndexCommand:
 
     @inject.autoparams(
         "zorgab_scraper",
-        "bundle_normalizer",
+        "organization_normalizer",
         "search_index_repository",
         "encrypted_endpoint_provider",
         "encrypted_endpoints_repository",
@@ -34,11 +33,10 @@ class UpdateSearchIndexCommand:
     def __init__(
         self,
         zorgab_scraper: ZorgabScraper,
-        bundle_normalizer: BundleNormalizer,
-        search_index_repository: SearchIndexRepository,
+        organization_normalizer: OrganizationNormalizer,
+        search_index_repository: SearchIndexStreamRepository,
         encrypted_endpoint_provider: EncryptedEndpointProvider,
         encrypted_endpoints_repository: EncryptedEndpointsRepository,
-        mock_organizations_merger: MockOrganizationsMerger,
     ) -> None:
         """
         Command to update the search index with organization data from ZorgAB.
@@ -46,11 +44,10 @@ class UpdateSearchIndexCommand:
         The output file is written to a static mount folder to serve it to clients.
         """
         self.__zorgab_scraper = zorgab_scraper
-        self.__bundle_normalizer = bundle_normalizer
+        self.__organization_normalizer = organization_normalizer
         self.__search_index_repository = search_index_repository
         self.__encrypted_endpoint_provider = encrypted_endpoint_provider
         self.__encrypted_endpoints_repository = encrypted_endpoints_repository
-        self.__mock_organizations_merger = mock_organizations_merger
 
     @staticmethod
     def init_arguments(subparser: SubParsers) -> None:
@@ -80,47 +77,33 @@ class UpdateSearchIndexCommand:
             help="Comma-separated list of identifier sources to use for scraping",
         )
 
-    def run(self, args: Namespace) -> int:
+    def run(self, args: Namespace) -> None:
         logger.info("Search index update started")
 
-        try:
-            bundle_with_organizations = self.__scrape_organizations(
-                args.scrape_limit,
-                args.scrape_workers,
-                args.scrape_sources,
-            )
+        bundle_entries = self.__scrape_organizations(
+            args.scrape_limit,
+            args.scrape_workers,
+            args.scrape_sources,
+        )
 
-            normalized_organizations = self.__normalize_bundle(bundle_with_organizations)
+        normalized_organizations = self.__normalize_entries(bundle_entries)
 
-            logger.info("Applying optional mock organization merge")
+        self.__save_search_index(normalized_organizations)
 
-            merged_organizations = self.__mock_organizations_merger.merge(normalized_organizations)
+        logger.info("Exporting encrypted endpoints for search index")
+        encrypted_endpoints = self.__encrypted_endpoint_provider.get_all()
+        logger.info("Encrypted endpoints export completed successfully")
 
-            logger.info(
-                "Organization payload prepared (normalized=%d, final=%d)",
-                len(normalized_organizations),
-                len(merged_organizations),
-            )
-
-            logger.info("Exporting encrypted endpoints for search index")
-            encrypted_endpoints = self.__encrypted_endpoint_provider.get_all()
-            logger.info("Encrypted endpoints export completed successfully")
-
-            self.__save_search_index(SearchIndex(entries=merged_organizations))
-            self.__save_encrypted_endpoints(encrypted_endpoints)
-        except Exception:
-            logger.exception("Search index update failed")
-            return 1
+        self.__save_encrypted_endpoints(encrypted_endpoints)
 
         logger.info("Search index update completed successfully")
-        return 0
 
     def __scrape_organizations(
         self,
         scrape_limit: int,
         scrape_workers: int,
         identifier_sources: list[IdentifierSource],
-    ) -> Bundle:
+    ) -> Iterator[OrganizationBundleEntry]:
         logger.info(
             "Scraping organizations from ZorgAB (limit=%d, workers=%d, sources=%s)",
             scrape_limit,
@@ -129,7 +112,7 @@ class UpdateSearchIndexCommand:
         )
 
         try:
-            bundle = self.__zorgab_scraper.run(scrape_limit, scrape_workers, identifier_sources)
+            bundle_entries = self.__zorgab_scraper.run(scrape_limit, scrape_workers, identifier_sources)
         except Exception:
             logger.exception(
                 "Scraping organizations from ZorgAB failed (limit=%d, workers=%d, sources=%s)",
@@ -139,32 +122,20 @@ class UpdateSearchIndexCommand:
             )
             raise
 
-        logger.info("Scraping completed successfully (organizations=%d)", bundle.total)
-        return bundle
+        return bundle_entries
 
-    def __normalize_bundle(self, bundle: Bundle) -> list[NormalizedOrganization]:
-        logger.info("Normalizing scraped bundle")
+    def __normalize_entries(
+        self, bundle_entries: Iterator[OrganizationBundleEntry]
+    ) -> Iterator[NormalizedOrganization]:
+        for entry in bundle_entries:
+            logger.debug("Normalizing organization with entry fullUrl=%s", entry.full_url)
 
-        try:
-            normalized_organizations = self.__bundle_normalizer.normalize(bundle)
-        except Exception:
-            logger.exception("Bundle normalization failed")
-            raise
+            yield self.__organization_normalizer.normalize(entry.resource)
 
-        logger.info(
-            "Bundle normalization completed successfully (organizations=%d)",
-            len(normalized_organizations),
-        )
-        return normalized_organizations
-
-    def __save_search_index(self, search_index: SearchIndex) -> None:
+    def __save_search_index(self, normalized_organizations: Iterator[NormalizedOrganization]) -> None:
         logger.info("Saving search index")
 
-        try:
-            self.__search_index_repository.save(search_index)
-        except Exception:
-            logger.exception("Saving search index failed")
-            raise
+        self.__search_index_repository.save(normalized_organizations)
 
         logger.info("Search index saved successfully")
 

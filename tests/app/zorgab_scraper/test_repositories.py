@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 from fhir.resources.STU3.bundle import Bundle, BundleEntry
 from fhir.resources.STU3.organization import Organization as FhirOrganization
 from freezegun import freeze_time
-from pytest_mock import MockerFixture
 
 from app.zorgab_scraper.config import ZorgABScraperConfig
 from app.zorgab_scraper.repositories import ZorgABJsonFileRepository
@@ -22,10 +21,9 @@ def domain_config(tmp_path: Path) -> ZorgABScraperConfig:
 class TestZorgabJsonResultWriter:
     @freeze_time("2024-01-02 03:04:05")
     def test_write_creates_timestamped_filename_and_collection_bundle(
-        self, domain_config: ZorgABScraperConfig, mocker: MockerFixture, test_client: TestClient
+        self, domain_config: ZorgABScraperConfig, test_client: TestClient
     ) -> None:
-        logger = mocker.Mock()
-        writer = ZorgABJsonFileRepository(logger=logger, domain_config=domain_config)
+        writer = ZorgABJsonFileRepository(domain_config=domain_config)
         bundle = Bundle(type="collection", entry=[])
 
         filename = writer.write(bundle)
@@ -34,11 +32,8 @@ class TestZorgabJsonResultWriter:
         saved = json.loads(Path(filename).read_text(encoding="utf-8"))
         assert saved["type"] == "collection"
 
-    def test_write_serializes_bundle_entries(
-        self, domain_config: ZorgABScraperConfig, mocker: MockerFixture, test_client: TestClient
-    ) -> None:
-        logger = mocker.Mock()
-        writer = ZorgABJsonFileRepository(logger=logger, domain_config=domain_config)
+    def test_write_serializes_bundle_entries(self, domain_config: ZorgABScraperConfig, test_client: TestClient) -> None:
+        writer = ZorgABJsonFileRepository(domain_config=domain_config)
         bundle = Bundle(
             type="collection",
             entry=[
@@ -61,11 +56,8 @@ class TestZorgabJsonResultWriter:
         assert "https://example.com/Organization/org-1" in full_urls
         assert "https://example.com/Organization/org-2" in full_urls
 
-    def test_write_accepts_bundle_entries(
-        self, domain_config: ZorgABScraperConfig, mocker: MockerFixture, test_client: TestClient
-    ) -> None:
-        logger = mocker.Mock()
-        writer = ZorgABJsonFileRepository(logger=logger, domain_config=domain_config)
+    def test_write_accepts_bundle_entries(self, domain_config: ZorgABScraperConfig, test_client: TestClient) -> None:
+        writer = ZorgABJsonFileRepository(domain_config=domain_config)
         result = Bundle(
             type="collection",
             entry=[
@@ -81,11 +73,8 @@ class TestZorgabJsonResultWriter:
         assert "One" in names
         assert "Two" in names
 
-    def test_write_handles_empty_payloads(
-        self, domain_config: ZorgABScraperConfig, mocker: MockerFixture, test_client: TestClient
-    ) -> None:
-        logger = mocker.Mock()
-        writer = ZorgABJsonFileRepository(logger=logger, domain_config=domain_config)
+    def test_write_handles_empty_payloads(self, domain_config: ZorgABScraperConfig, test_client: TestClient) -> None:
+        writer = ZorgABJsonFileRepository(domain_config=domain_config)
         result = Bundle(type="collection", entry=[])
 
         filename = writer.write(result)

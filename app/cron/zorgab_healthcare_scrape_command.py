@@ -2,6 +2,7 @@ import argparse
 from logging import Logger
 
 import inject
+from fhir.resources.STU3.bundle import Bundle, BundleEntry
 
 from app.cron.arg_types import ListType
 from app.cron.utils import SubParsers
@@ -48,10 +49,14 @@ class ZorgABHealthcareScrapeCommand:
         )
 
     def run(self, args: argparse.Namespace) -> int:
-        bundle = self.__scraper.run(
+        entries = self.__scraper.run(
             scrape_limit=args.limit,
             workers=args.workers,
             identifier_sources=args.identifier_sources,
+        )
+        bundle = Bundle(
+            type="collection",
+            entry=[BundleEntry(fullUrl=e.full_url, resource=e.resource) for e in entries],
         )
         filename = self.__writer.write(bundle)
         self.__logger.info("Zorgab scrape saved to %s", filename)

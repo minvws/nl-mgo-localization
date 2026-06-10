@@ -61,6 +61,10 @@ It will be available at http://localhost:8006.
 
 A browsable and executable version of the REST API can be found at: http://localhost:8006/docs
 
+### Version metadata
+
+The homepage (`/`) only shows the service name and does not render version information from `public/version.json`. The FastAPI application loads this file to determine the OAS version seen in the `/docs` endpoint.
+
 ### Makefile
 
 The Makefile allows some commands to be executed both within Docker and outside Docker.

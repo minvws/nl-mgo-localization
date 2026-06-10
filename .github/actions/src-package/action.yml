@@ -21,11 +21,11 @@ runs:
 
         - name: Add version file
           shell: bash
-          run: 'echo "{ \"version\": \"${{ env.RELEASE_VERSION }}\", \"git_ref\": \"$GITHUB_SHA\"}" > version.json'
+          run: 'echo "{ \"version\": \"${{ env.RELEASE_VERSION }}\", \"git_ref\": \"$GITHUB_SHA\"}" > public/version.json'
 
         - name: Create tar
           shell: bash
-          run: tar -czf ${{ env.PACKAGE_FILE_NAME }}.tar.gz app docs sql static tools version.json HOSTING_CHANGELOG.md app.conf.example resources/search_index
+          run: tar -czf ${{ env.PACKAGE_FILE_NAME }}.tar.gz app docs public sql static tools HOSTING_CHANGELOG.md app.conf.example resources/search_index
 
         - name: Upload release tar
           uses: actions/upload-artifact@v4

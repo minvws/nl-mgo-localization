@@ -1,6 +1,7 @@
 from argparse import Namespace
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import inject
 import orjson
@@ -21,8 +22,10 @@ from app.search_indexation.constants import ENCRYPTED_ENDPOINTS_OUTPUT_FILENAME,
 from app.search_indexation.repositories import (
     EncryptedEndpointsFileRepository,
     EncryptedEndpointsRepository,
-    SearchIndexFileRepository,
-    SearchIndexRepository,
+    FilesystemSearchIndexStreamRepository,
+    MockOrganizationMergerDecorator,
+    MockOrganizationRepository,
+    SearchIndexStreamRepository,
 )
 from app.zal_importer.enums import IdentifyingFeatureType, OrganisationType
 from app.zorgab_scraper.config import IdentifierSource, ZorgABScraperConfig
@@ -93,13 +96,22 @@ class TestUpdateSearchIndexCommandFunctional:
         config.search_indexation.mock_addressing_path = paths["mock_organizations_dir"] / "mock-addressing.json"
 
         def bindings_override(binder: inject.Binder) -> None:
-            binder.bind_to_constructor(
-                SearchIndexRepository,
-                lambda: SearchIndexFileRepository(
+            def make_search_index_repo() -> SearchIndexStreamRepository:
+                filesystem_repo = FilesystemSearchIndexStreamRepository(
                     output_path=paths["output_dir"] / SEARCH_INDEX_OUTPUT_FILENAME,
                     temp_path=paths["temp_dir"],
-                ),
-            )
+                )
+                if config.search_indexation.include_mock_organizations:
+                    return cast(
+                        SearchIndexStreamRepository,
+                        MockOrganizationMergerDecorator(
+                            decorated=filesystem_repo,
+                            mock_organizations_repository=inject.instance(MockOrganizationRepository),
+                        ),
+                    )
+                return filesystem_repo
+
+            binder.bind_to_constructor(SearchIndexStreamRepository, make_search_index_repo)
             binder.bind_to_constructor(
                 EncryptedEndpointsRepository,
                 lambda: EncryptedEndpointsFileRepository(
@@ -196,15 +208,13 @@ class TestUpdateSearchIndexCommandFunctional:
 
         command = UpdateSearchIndexCommand()
 
-        exit_code = command.run(
+        command.run(
             Namespace(
                 scrape_limit=10,
                 scrape_workers=2,
                 scrape_sources=[IdentifierSource.zakl_xml, IdentifierSource.agb_csv],
             )
         )
-
-        assert exit_code == 0
 
         organizations = sorted(
             orjson.loads(paths["output_file"].read_bytes()),

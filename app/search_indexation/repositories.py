@@ -1,5 +1,8 @@
 import logging
+from collections.abc import Iterator
+from os import fsync, makedirs, path, replace, unlink
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import List, Protocol, TypeAlias, cast
 
 import inject
@@ -10,45 +13,14 @@ from app.db.repositories import DbEndpointRepository, EndpointRepository
 from app.normalization.models import NormalizedOrganization
 from app.search_indexation.writer import AtomicFileWriter
 
-from .models import SearchIndex
-
 logger = logging.getLogger(__name__)
 
 
 EncryptedEndpoints: TypeAlias = dict[int, str]
 
 
-class SearchIndexRepository(Protocol):
-    def save(self, search_index: SearchIndex) -> None: ...
-
-
-class SearchIndexFileRepository(SearchIndexRepository):
-    @inject.autoparams("output_path", "temp_path", "file_writer")
-    def __init__(self, output_path: Path, temp_path: Path, file_writer: AtomicFileWriter) -> None:
-        self.__output_path = output_path
-        self.__temp_path = temp_path
-        self.__writer = file_writer
-
-    def save(self, search_index: SearchIndex) -> None:
-        logger.debug("Writing search index to disk %s", self.__output_path)
-
-        try:
-            data = orjson.dumps(search_index.entries)
-            self.__writer.write(
-                data,
-                output_path=self.__output_path,
-                temp_path=self.__temp_path,
-                prefix="search_index_",
-            )
-
-            logger.debug(
-                "SearchIndex written successfully to %s (%d entries)",
-                self.__output_path,
-                len(search_index.entries),
-            )
-        except Exception:
-            logger.exception("Failed to persist SearchIndex to %s", self.__output_path)
-            raise
+class SearchIndexStreamRepository(Protocol):
+    def save(self, normalized_organizations: Iterator[NormalizedOrganization]) -> None: ...
 
 
 class EncryptedEndpointsRepository(Protocol):
@@ -87,7 +59,7 @@ class EncryptedEndpointsFileRepository(EncryptedEndpointsRepository):
             raise
 
 
-class MockOrganizationsFileRepo:
+class MockOrganizationRepository:
     def __init__(self, mock_organizations_path: Path, mock_addressing_path: Path) -> None:
         self.__mock_organizations_path = mock_organizations_path
         self.__mock_addressing_path = mock_addressing_path
@@ -145,7 +117,7 @@ class MockEndpointsRepository(EndpointRepository):
         self,
         dva_mock_url: str,
         endpoint_repository: DbEndpointRepository,
-        mock_organization_repository: MockOrganizationsFileRepo,
+        mock_organization_repository: MockOrganizationRepository,
     ) -> None:
         self.endpoint_repository = endpoint_repository
         self.mock_organization_repository = mock_organization_repository
@@ -176,3 +148,90 @@ class MockEndpointsRepository(EndpointRepository):
                 endpoints[endpoint_id] = url.replace("{{DVA_MOCK_URL}}", self.__dva_mock_url)
 
         return endpoints
+
+
+class FilesystemSearchIndexStreamRepository(SearchIndexStreamRepository):
+    def __init__(self, output_path: Path, temp_path: Path) -> None:
+        self.__output_path = output_path
+        self.__temp_path = temp_path
+
+    def save(self, normalized_organizations: Iterator[NormalizedOrganization]) -> None:
+        count = 0
+        tmp_file_path: str | None = None
+
+        makedirs(self.__temp_path, exist_ok=True)
+        makedirs(self.__output_path.parent, exist_ok=True)
+
+        try:
+            with NamedTemporaryFile("wb", dir=self.__temp_path, prefix="search_index_", delete=False) as tmp_file:
+                tmp_file_path = tmp_file.name
+                tmp_file.write(b"[")
+                first = True
+
+                for normalized_organization in normalized_organizations:
+                    if not first:
+                        tmp_file.write(b",")
+
+                    tmp_file.write(orjson.dumps(normalized_organization))
+
+                    count += 1
+                    first = False
+
+                tmp_file.write(b"]")
+                tmp_file.flush()
+
+                fsync(tmp_file.fileno())
+
+            replace(tmp_file_path, self.__output_path)
+            tmp_file_path = None
+
+            logger.debug("SearchIndex written successfully to %s (%d entries)", self.__output_path, count)
+
+        except Exception:
+            logger.exception("Failed to persist SearchIndex to %s", self.__output_path)
+
+            raise
+
+        finally:
+            if tmp_file_path and path.exists(tmp_file_path):
+                try:
+                    unlink(tmp_file_path)
+                except Exception:
+                    logger.debug("Failed to clean up temp file %s", tmp_file_path)
+
+                tmp_file_path = None
+
+
+class MockOrganizationMergerDecorator(SearchIndexStreamRepository):
+    @inject.autoparams("mock_organizations_repository")
+    def __init__(
+        self,
+        decorated: SearchIndexStreamRepository,
+        mock_organizations_repository: MockOrganizationRepository,
+    ) -> None:
+        self.__decorated = decorated
+        self.__mock_organizations_repository = mock_organizations_repository
+
+    def save(self, normalized_organizations: Iterator[NormalizedOrganization]) -> None:
+        self.__decorated.save(
+            self.__get_unique_normalized_and_mocked_organizations(normalized_organizations),
+        )
+
+    def __get_unique_normalized_and_mocked_organizations(
+        self, normalized_organizations: Iterator[NormalizedOrganization]
+    ) -> Iterator[NormalizedOrganization]:
+        seen_ids: set[str | None] = set()
+
+        for normalized_organization in normalized_organizations:
+            seen_ids.add(normalized_organization["id"])
+
+            yield normalized_organization
+
+        for mock_organization in self.__mock_organizations_repository.read_mock_organizations():
+            if mock_organization.get("id") in seen_ids:
+                raise RuntimeError(
+                    "Duplicate organization id between normalized organizations and mock organizations: %s"
+                    % mock_organization.get("id"),
+                )
+
+            yield mock_organization

@@ -3,58 +3,49 @@ import logging
 from argparse import Namespace
 
 import pytest
-from fhir.resources.STU3.bundle import Bundle, BundleEntry
 from fhir.resources.STU3.organization import Organization
 from pytest import LogCaptureFixture
 from pytest_mock import MockerFixture
 
 from app.cron.commands.update_search_index_command import UpdateSearchIndexCommand
-from app.normalization.bundle import BundleNormalizer
 from app.normalization.models import NormalizedOrganization
-from app.search_indexation.models import SearchIndex
-from app.search_indexation.repositories import EncryptedEndpointsRepository, SearchIndexRepository
-from app.search_indexation.services import (
-    EncryptedEndpointProvider,
-    MockOrganizationsMerger,
-)
+from app.normalization.organization_normalizer import OrganizationNormalizer
+from app.search_indexation.repositories import EncryptedEndpointsRepository, SearchIndexStreamRepository
+from app.search_indexation.services import EncryptedEndpointProvider
 from app.zorgab_scraper.config import IdentifierSource
+from app.zorgab_scraper.models import OrganizationBundleEntry
 from app.zorgab_scraper.scraper import ZorgabScraper
 from tests.utils import assert_captured_logs
 
 
 @pytest.fixture()
-def bundle() -> Bundle:
-    organization = Organization()
-    bundle_entry = BundleEntry(fullUrl="urn:uuid:org-123", resource=organization)
-    return Bundle(type="collection", entry=[bundle_entry], total=1)
+def bundle_entry() -> OrganizationBundleEntry:
+    return OrganizationBundleEntry(full_url="urn:uuid:org-123", resource=Organization())
 
 
 @pytest.fixture()
-def normalized_organizations() -> list[NormalizedOrganization]:
-    return [
-        {"id": "urn:uuid:org-123", "name": "Org 1"},
-    ]
+def normalized_organization() -> NormalizedOrganization:
+    return {"id": "urn:uuid:org-123", "name": "Org 1"}
 
 
 class TestUpdateSearchIndexCommand:
     def test_happy_path(
         self,
-        bundle: Bundle,
-        normalized_organizations: list[NormalizedOrganization],
+        bundle_entry: OrganizationBundleEntry,
+        normalized_organization: NormalizedOrganization,
         caplog: LogCaptureFixture,
         mocker: MockerFixture,
     ) -> None:
         mock_scraper = mocker.Mock(spec=ZorgabScraper)
-        mock_normalizer = mocker.Mock(spec=BundleNormalizer)
-        mock_repository = mocker.Mock(spec=SearchIndexRepository)
+        mock_normalizer = mocker.Mock(spec=OrganizationNormalizer)
+        mock_repository = mocker.Mock(spec=SearchIndexStreamRepository)
         mock_endpoint_provider = mocker.Mock(spec=EncryptedEndpointProvider)
         mock_encrypted_endpoints_repository = mocker.Mock(spec=EncryptedEndpointsRepository)
-        mock_organizations_merger = mocker.Mock(spec=MockOrganizationsMerger)
-        mock_endpoint_provider.get_all.return_value = {"org-123": "encrypted-url-123"}
-        mock_organizations_merger.merge.return_value = normalized_organizations
 
-        mock_scraper.run.return_value = bundle
-        mock_normalizer.normalize.return_value = normalized_organizations
+        mock_scraper.run.return_value = iter([bundle_entry])
+        mock_normalizer.normalize.return_value = normalized_organization
+        mock_endpoint_provider.get_all.return_value = {"org-123": "encrypted-url-123"}
+        mock_repository.save.side_effect = lambda orgs: list(orgs)
 
         args = Namespace(
             scrape_limit=0,
@@ -65,14 +56,12 @@ class TestUpdateSearchIndexCommand:
 
         command = UpdateSearchIndexCommand(
             zorgab_scraper=mock_scraper,
-            bundle_normalizer=mock_normalizer,
+            organization_normalizer=mock_normalizer,
             search_index_repository=mock_repository,
             encrypted_endpoint_provider=mock_endpoint_provider,
             encrypted_endpoints_repository=mock_encrypted_endpoints_repository,
-            mock_organizations_merger=mock_organizations_merger,
         )
-        exit_code = command.run(args)
-        assert exit_code == 0
+        command.run(args)
 
         assert_captured_logs(
             caplog,
@@ -82,9 +71,6 @@ class TestUpdateSearchIndexCommand:
                     "Scraping organizations from ZorgAB (limit=0, workers=4, sources=['zakl_xml', 'agb_csv'])",
                     logging.INFO,
                 ),
-                ("Scraping completed successfully (organizations=1)", logging.INFO),
-                ("Normalizing scraped bundle", logging.INFO),
-                ("Bundle normalization completed successfully (organizations=1)", logging.INFO),
                 ("Saving search index", logging.INFO),
                 ("Search index saved successfully", logging.INFO),
                 ("Exporting encrypted endpoints for search index", logging.INFO),
@@ -96,18 +82,17 @@ class TestUpdateSearchIndexCommand:
         )
 
         mock_scraper.run.assert_called_once_with(args.scrape_limit, args.scrape_workers, args.scrape_sources)
-        mock_normalizer.normalize.assert_called_once_with(bundle)
-        mock_repository.save.assert_called_once_with(SearchIndex(normalized_organizations))
+        mock_normalizer.normalize.assert_called_once_with(bundle_entry.resource)
+        mock_repository.save.assert_called_once()
         mock_encrypted_endpoints_repository.save.assert_called_once_with({"org-123": "encrypted-url-123"})
         mock_endpoint_provider.get_all.assert_called_once()
 
     def test_scraper_failure(self, caplog: LogCaptureFixture, mocker: MockerFixture) -> None:
         mock_scraper = mocker.Mock(spec=ZorgabScraper)
-        mock_normalizer = mocker.Mock(spec=BundleNormalizer)
-        mock_repository = mocker.Mock(spec=SearchIndexRepository)
+        mock_normalizer = mocker.Mock(spec=OrganizationNormalizer)
+        mock_repository = mocker.Mock(spec=SearchIndexStreamRepository)
         mock_endpoint_provider = mocker.Mock(spec=EncryptedEndpointProvider)
         mock_encrypted_endpoints_repository = mocker.Mock(spec=EncryptedEndpointsRepository)
-        mock_organizations_merger = mocker.Mock(spec=MockOrganizationsMerger)
 
         mock_scraper.run.side_effect = Exception("Scraper failed")
 
@@ -120,33 +105,25 @@ class TestUpdateSearchIndexCommand:
 
         command = UpdateSearchIndexCommand(
             zorgab_scraper=mock_scraper,
-            bundle_normalizer=mock_normalizer,
+            organization_normalizer=mock_normalizer,
             search_index_repository=mock_repository,
             encrypted_endpoint_provider=mock_endpoint_provider,
             encrypted_endpoints_repository=mock_encrypted_endpoints_repository,
-            mock_organizations_merger=mock_organizations_merger,
         )
 
-        exit_code = command.run(args)
-        assert exit_code == 1
+        with pytest.raises(Exception, match="Scraper failed"):
+            command.run(args)
 
         assert_captured_logs(
             caplog,
             [
-                (
-                    "Search index update started",
-                    logging.INFO,
-                ),
+                ("Search index update started", logging.INFO),
                 (
                     "Scraping organizations from ZorgAB (limit=0, workers=4, sources=['zakl_xml', 'agb_csv'])",
                     logging.INFO,
                 ),
                 (
                     "Scraping organizations from ZorgAB failed (limit=0, workers=4, sources=['zakl_xml', 'agb_csv'])",
-                    logging.ERROR,
-                ),
-                (
-                    "Search index update failed",
                     logging.ERROR,
                 ),
             ],
@@ -158,16 +135,21 @@ class TestUpdateSearchIndexCommand:
         mock_encrypted_endpoints_repository.save.assert_not_called()
         mock_endpoint_provider.get_all.assert_not_called()
 
-    def test_normalization_failure(self, bundle: Bundle, caplog: LogCaptureFixture, mocker: MockerFixture) -> None:
+    def test_normalization_failure(
+        self,
+        bundle_entry: OrganizationBundleEntry,
+        caplog: LogCaptureFixture,
+        mocker: MockerFixture,
+    ) -> None:
         mock_scraper = mocker.Mock(spec=ZorgabScraper)
-        mock_normalizer = mocker.Mock(spec=BundleNormalizer)
-        mock_repository = mocker.Mock(spec=SearchIndexRepository)
+        mock_normalizer = mocker.Mock(spec=OrganizationNormalizer)
+        mock_repository = mocker.Mock(spec=SearchIndexStreamRepository)
         mock_endpoint_provider = mocker.Mock(spec=EncryptedEndpointProvider)
         mock_encrypted_endpoints_repository = mocker.Mock(spec=EncryptedEndpointsRepository)
-        mock_organizations_merger = mocker.Mock(spec=MockOrganizationsMerger)
 
-        mock_scraper.run.return_value = bundle
+        mock_scraper.run.return_value = iter([bundle_entry])
         mock_normalizer.normalize.side_effect = Exception("Normalization failed")
+        mock_repository.save.side_effect = lambda orgs: list(orgs)
 
         args = Namespace(
             scrape_limit=0,
@@ -178,49 +160,47 @@ class TestUpdateSearchIndexCommand:
 
         command = UpdateSearchIndexCommand(
             zorgab_scraper=mock_scraper,
-            bundle_normalizer=mock_normalizer,
+            organization_normalizer=mock_normalizer,
             search_index_repository=mock_repository,
             encrypted_endpoint_provider=mock_endpoint_provider,
             encrypted_endpoints_repository=mock_encrypted_endpoints_repository,
-            mock_organizations_merger=mock_organizations_merger,
         )
-        exit_code = command.run(args)
-        assert exit_code == 1
+        with pytest.raises(Exception, match="Normalization failed"):
+            command.run(args)
 
         assert_captured_logs(
             caplog,
             [
                 ("Search index update started", logging.INFO),
-                ("Scraping completed successfully (organizations=1)", logging.INFO),
-                ("Bundle normalization failed", logging.ERROR),
-                ("Search index update failed", logging.ERROR),
+                (
+                    "Scraping organizations from ZorgAB (limit=0, workers=4, sources=['zakl_xml', 'agb_csv'])",
+                    logging.INFO,
+                ),
+                ("Saving search index", logging.INFO),
             ],
         )
 
         mock_scraper.run.assert_called_once_with(args.scrape_limit, args.scrape_workers, args.scrape_sources)
-        mock_normalizer.normalize.assert_called_once_with(bundle)
-        mock_repository.save.assert_not_called()
+        mock_normalizer.normalize.assert_called_once_with(bundle_entry.resource)
+        mock_repository.save.assert_called_once()
         mock_encrypted_endpoints_repository.save.assert_not_called()
         mock_endpoint_provider.get_all.assert_not_called()
 
     def test_persistence_failure(
         self,
-        bundle: Bundle,
-        normalized_organizations: list[NormalizedOrganization],
+        bundle_entry: OrganizationBundleEntry,
+        normalized_organization: NormalizedOrganization,
         caplog: LogCaptureFixture,
         mocker: MockerFixture,
     ) -> None:
         mock_scraper = mocker.Mock(spec=ZorgabScraper)
-        mock_normalizer = mocker.Mock(spec=BundleNormalizer)
-        mock_repository = mocker.Mock(spec=SearchIndexRepository)
+        mock_normalizer = mocker.Mock(spec=OrganizationNormalizer)
+        mock_repository = mocker.Mock(spec=SearchIndexStreamRepository)
         mock_endpoint_provider = mocker.Mock(spec=EncryptedEndpointProvider)
         mock_encrypted_endpoints_repository = mocker.Mock(spec=EncryptedEndpointsRepository)
-        mock_organizations_merger = mocker.Mock(spec=MockOrganizationsMerger)
 
-        mock_scraper.run.return_value = bundle
-        mock_normalizer.normalize.return_value = normalized_organizations
-        mock_organizations_merger.merge.return_value = normalized_organizations
-        mock_endpoint_provider.get_all.return_value = {"org-123": "encrypted-url-123"}
+        mock_scraper.run.return_value = iter([bundle_entry])
+        mock_normalizer.normalize.return_value = normalized_organization
         mock_repository.save.side_effect = Exception("Persistence failure")
 
         args = Namespace(
@@ -232,51 +212,47 @@ class TestUpdateSearchIndexCommand:
 
         command = UpdateSearchIndexCommand(
             zorgab_scraper=mock_scraper,
-            bundle_normalizer=mock_normalizer,
+            organization_normalizer=mock_normalizer,
             search_index_repository=mock_repository,
             encrypted_endpoint_provider=mock_endpoint_provider,
             encrypted_endpoints_repository=mock_encrypted_endpoints_repository,
-            mock_organizations_merger=mock_organizations_merger,
         )
 
-        exit_code = command.run(args)
-        assert exit_code == 1
+        with pytest.raises(Exception, match="Persistence failure"):
+            command.run(args)
 
         assert_captured_logs(
             caplog,
             [
                 ("Search index update started", logging.INFO),
-                ("Scraping completed successfully (organizations=1)", logging.INFO),
-                ("Bundle normalization completed successfully (organizations=1)", logging.INFO),
+                (
+                    "Scraping organizations from ZorgAB (limit=0, workers=4, sources=['zakl_xml', 'agb_csv'])",
+                    logging.INFO,
+                ),
                 ("Saving search index", logging.INFO),
-                ("Saving search index failed", logging.ERROR),
-                ("Search index update failed", logging.ERROR),
             ],
         )
 
         mock_scraper.run.assert_called_once_with(args.scrape_limit, args.scrape_workers, args.scrape_sources)
-        mock_normalizer.normalize.assert_called_once_with(bundle)
         mock_repository.save.assert_called_once()
         mock_encrypted_endpoints_repository.save.assert_not_called()
-        mock_endpoint_provider.get_all.assert_called_once()
+        mock_endpoint_provider.get_all.assert_not_called()
 
     def test_encrypted_endpoints_save_failure(
         self,
-        bundle: Bundle,
-        normalized_organizations: list[NormalizedOrganization],
+        bundle_entry: OrganizationBundleEntry,
+        normalized_organization: NormalizedOrganization,
         caplog: LogCaptureFixture,
         mocker: MockerFixture,
     ) -> None:
         mock_scraper = mocker.Mock(spec=ZorgabScraper)
-        mock_normalizer = mocker.Mock(spec=BundleNormalizer)
-        mock_repository = mocker.Mock(spec=SearchIndexRepository)
+        mock_normalizer = mocker.Mock(spec=OrganizationNormalizer)
+        mock_repository = mocker.Mock(spec=SearchIndexStreamRepository)
         mock_endpoint_provider = mocker.Mock(spec=EncryptedEndpointProvider)
         mock_encrypted_endpoints_repository = mocker.Mock(spec=EncryptedEndpointsRepository)
-        mock_organizations_merger = mocker.Mock(spec=MockOrganizationsMerger)
 
-        mock_scraper.run.return_value = bundle
-        mock_normalizer.normalize.return_value = normalized_organizations
-        mock_organizations_merger.merge.return_value = normalized_organizations
+        mock_scraper.run.return_value = iter([bundle_entry])
+        mock_normalizer.normalize.return_value = normalized_organization
         mock_endpoint_provider.get_all.return_value = {"org-123": "encrypted-url-123"}
         mock_encrypted_endpoints_repository.save.side_effect = Exception("Save failure")
 
@@ -289,25 +265,29 @@ class TestUpdateSearchIndexCommand:
 
         command = UpdateSearchIndexCommand(
             zorgab_scraper=mock_scraper,
-            bundle_normalizer=mock_normalizer,
+            organization_normalizer=mock_normalizer,
             search_index_repository=mock_repository,
             encrypted_endpoint_provider=mock_endpoint_provider,
             encrypted_endpoints_repository=mock_encrypted_endpoints_repository,
-            mock_organizations_merger=mock_organizations_merger,
         )
 
-        exit_code = command.run(args)
-        assert exit_code == 1
+        with pytest.raises(Exception, match="Save failure"):
+            command.run(args)
 
         assert_captured_logs(
             caplog,
             [
                 ("Search index update started", logging.INFO),
+                (
+                    "Scraping organizations from ZorgAB (limit=0, workers=4, sources=['zakl_xml', 'agb_csv'])",
+                    logging.INFO,
+                ),
                 ("Saving search index", logging.INFO),
                 ("Search index saved successfully", logging.INFO),
+                ("Exporting encrypted endpoints for search index", logging.INFO),
+                ("Encrypted endpoints export completed successfully", logging.INFO),
                 ("Saving encrypted endpoints", logging.INFO),
                 ("Saving encrypted endpoints failed", logging.ERROR),
-                ("Search index update failed", logging.ERROR),
             ],
         )
 

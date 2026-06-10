@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import List
+from typing import Final, List
+
+SYSTEM_ROLE_CODE: Final[str] = "MM-1.0-TDB-FHIR"
 
 
 class HealthOrganizationFixtures:
@@ -151,6 +153,19 @@ class HealthOrganizationFixtures:
                     {
                         "code": "MM-3.0-LZB-FHIR",
                         "resource_endpoint": "{{MOCK_URL}}/61",
+                    }
+                ],
+            },
+            {
+                "id": "9000002",
+                "name": "BeeldBeschikbaarheid",
+                "interface_versions": ["2"],
+                "auth_endpoint": "{{MOCK_URL}}/auth",
+                "token_endpoint": "{{MOCK_URL}}/token",
+                "roles": [
+                    {
+                        "code": SYSTEM_ROLE_CODE,
+                        "resource_endpoint": "{{MOCK_URL}}/9000002",
                     }
                 ],
             },
@@ -375,6 +390,20 @@ class QualificationDataServiceFixtures(Enum):
         ],
     }
 
+    BBS = {
+        "id": "9000002",
+        "name": "BeeldBeschikbaarheid",
+        "interface_versions": ["2"],
+        "auth_endpoint": "{{MOCK_URL}}/auth",
+        "token_endpoint": "{{MOCK_URL}}/token",
+        "roles": [
+            {
+                "code": SYSTEM_ROLE_CODE,
+                "resource_endpoint": "{{MOCK_URL}}/9000002",
+            }
+        ],
+    }
+
 
 """
 Interoplab dataservice which can just be accessed directly
@@ -430,6 +459,11 @@ INTEROPLAB_DATASERVICES: List[dict[str, str]] = list(
             "id": "65",
             "name": "Integrale zwangerschapskaart",
             "code": "GZ-1.0-IZB-FHIR",
+        },
+        {
+            "id": "9000002",
+            "name": "BeeldBeschikbaarheid",
+            "code": SYSTEM_ROLE_CODE,
         },
     ],
 )

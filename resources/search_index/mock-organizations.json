@@ -40,6 +40,56 @@
                 "auth_endpoint": "99999999999961",
                 "token_endpoint": "99999999999961",
                 "resource_endpoint": "99999999999961"
+            },
+            {
+                "id": "9000002",
+                "auth_endpoint": "999999999990000002",
+                "token_endpoint": "999999999990000002",
+                "resource_endpoint": "999999999990000002"
+            }
+        ]
+    },
+    {
+        "id": "mock-demo-ziekenhuis",
+        "medmij_id": "demo.ziekenhuis",
+        "name": "Demo Ziekenhuis",
+        "care_type": "Ziekenhuis",
+        "city": "STAD",
+        "postal_code": "1000AB",
+        "address": "Straatnaam 123A\n1000AB STAD",
+        "geo_lat": 53.21864104881037,
+        "geo_lng": 6.567660572054596,
+        "search_blob": "Ziekenhuis Demo Ziekenhuis STAD | 1000AB | Straatnaam 123A 1000AB STAD",
+        "data_services": [
+            {
+                "id": "48",
+                "auth_endpoint": "99999999999948",
+                "token_endpoint": "99999999999948",
+                "resource_endpoint": "99999999999948"
+            },
+            {
+                "id": "49",
+                "auth_endpoint": "99999999999949",
+                "token_endpoint": "99999999999949",
+                "resource_endpoint": "99999999999949"
+            },
+            {
+                "id": "50",
+                "auth_endpoint": "99999999999950",
+                "token_endpoint": "99999999999950",
+                "resource_endpoint": "99999999999950"
+            },
+            {
+                "id": "51",
+                "auth_endpoint": "99999999999951",
+                "token_endpoint": "99999999999951",
+                "resource_endpoint": "99999999999951"
+            },
+            {
+                "id": "61",
+                "auth_endpoint": "99999999999961",
+                "token_endpoint": "99999999999961",
+                "resource_endpoint": "99999999999961"
             }
         ]
     },
@@ -326,10 +376,10 @@
         "search_blob": "testtest",
         "data_services": [
             {
-                "id": "63",
-                "auth_endpoint": "99999999999963",
-                "token_endpoint": "99999999999963",
-                "resource_endpoint": "99999999999963"
+                "id": "66",
+                "auth_endpoint": "99999999999966",
+                "token_endpoint": "99999999999966",
+                "resource_endpoint": "99999999999966"
             }
         ]
     },
@@ -361,6 +411,26 @@
                 "auth_endpoint": "1",
                 "token_endpoint": "1",
                 "resource_endpoint": "7"
+            }
+        ]
+    },
+    {
+        "id": "mock-qualification-bbs",
+        "medmij_id": "bbs.qualification",
+        "name": "Kwalificatie Medmij: BBS",
+        "care_type": "Ziekenhuis",
+        "city": "STAD",
+        "postal_code": "1000AB",
+        "address": "Straatnaam 123A\n1000AB STAD",
+        "geo_lat": 53.21864104881037,
+        "geo_lng": 6.567660572054596,
+        "search_blob": "testtest",
+        "data_services": [
+            {
+                "id": "9000002",
+                "auth_endpoint": "999999999990000002",
+                "token_endpoint": "999999999990000002",
+                "resource_endpoint": "999999999990000002"
             }
         ]
     }

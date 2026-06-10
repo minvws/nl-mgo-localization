@@ -1,4 +1,6 @@
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Self
 
 import orjson
 import pytest
@@ -6,62 +8,146 @@ from pytest_mock import MockerFixture
 
 from app.db.models import Endpoint
 from app.normalization.models import NormalizedOrganization
-from app.search_indexation.models import SearchIndex
 from app.search_indexation.repositories import (
     EncryptedEndpointsFileRepository,
+    FilesystemSearchIndexStreamRepository,
     MockEndpointsRepository,
-    MockOrganizationsFileRepo,
-    SearchIndexFileRepository,
+    MockOrganizationMergerDecorator,
+    MockOrganizationRepository,
+    SearchIndexStreamRepository,
 )
 from app.search_indexation.writer import AtomicFileWriter
 
 
-class TestSearchIndexFileRepository:
-    @pytest.fixture
-    def search_index(self) -> SearchIndex:
+class FailingIterator(Iterator[NormalizedOrganization]):
+    def __iter__(self) -> Self:
+        return self
+
+    def __next__(self) -> NormalizedOrganization:
+        raise RuntimeError("stream error")
+
+
+class TestFilesystemSearchIndexStreamRepository:
+    def test_save_writes_json_array_to_output_path(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        temp_dir = tmp_path / "tmp"
+        output_file = tmp_path / "index.json"
         entries: list[NormalizedOrganization] = [
             {"id": "1", "name": "Org 1"},
             {"id": "2", "name": "Org 2"},
-            {"id": "3", "name": "Org 3"},
         ]
 
-        return SearchIndex(entries)
+        repo = FilesystemSearchIndexStreamRepository(output_path=output_file, temp_path=temp_dir)
+        repo.save(iter(entries))
 
-    def test_save_calls_writer_with_expected_arguments(
+        assert output_file.exists()
+        result = orjson.loads(output_file.read_bytes())
+        assert result == entries
+
+    def test_save_replaces_existing_file(
         self,
         tmp_path: Path,
-        search_index: SearchIndex,
+    ) -> None:
+        temp_dir = tmp_path / "tmp"
+        output_file = tmp_path / "index.json"
+        output_file.write_bytes(b"old content")
+        entries: list[NormalizedOrganization] = [{"id": "1", "name": "New"}]
+
+        repo = FilesystemSearchIndexStreamRepository(output_path=output_file, temp_path=temp_dir)
+        repo.save(iter(entries))
+
+        result = orjson.loads(output_file.read_bytes())
+        assert result == entries
+
+    def test_save_writes_empty_array_when_no_entries(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        temp_dir = tmp_path / "tmp"
+        output_file = tmp_path / "index.json"
+
+        repo = FilesystemSearchIndexStreamRepository(output_path=output_file, temp_path=temp_dir)
+        repo.save(iter([]))
+
+        result = orjson.loads(output_file.read_bytes())
+        assert result == []
+
+    def test_save_propagates_exception(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        temp_dir = tmp_path / "tmp"
+        output_file = tmp_path / "index.json"
+
+        repo = FilesystemSearchIndexStreamRepository(output_path=output_file, temp_path=temp_dir)
+
+        with pytest.raises(RuntimeError, match="stream error"):
+            repo.save(FailingIterator())
+
+    def test_save_cleans_up_temp_file_on_error(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        temp_dir = tmp_path / "tmp"
+        output_file = tmp_path / "index.json"
+
+        repo = FilesystemSearchIndexStreamRepository(output_path=output_file, temp_path=temp_dir)
+
+        with pytest.raises(RuntimeError):
+            repo.save(FailingIterator())
+
+        leftover = list(temp_dir.glob("search_index_*")) if temp_dir.exists() else []
+        assert leftover == []
+
+
+class TestMockOrganizationMergerDecorator:
+    def test_save_appends_mock_orgs_not_in_main_stream(
+        self,
         mocker: MockerFixture,
     ) -> None:
-        temp_dir = tmp_path / "search-index"
-        target_file = tmp_path / "index.json"
-        file_writer = mocker.Mock(spec=AtomicFileWriter)
+        inner = mocker.Mock(spec=SearchIndexStreamRepository)
+        consumed: list[NormalizedOrganization] = []
+        inner.save.side_effect = lambda orgs: consumed.extend(orgs)
 
-        repo = SearchIndexFileRepository(output_path=target_file, temp_path=temp_dir, file_writer=file_writer)
-        repo.save(search_index)
+        mock_org_repo = mocker.Mock(spec=MockOrganizationRepository)
+        mock_org_repo.read_mock_organizations.return_value = [
+            {"id": "mock-1", "name": "Mock Org"},
+        ]
 
-        file_writer.write.assert_called_once_with(
-            orjson.dumps(search_index.entries),
-            output_path=target_file,
-            temp_path=temp_dir,
-            prefix="search_index_",
+        repo = MockOrganizationMergerDecorator(
+            decorated=inner,
+            mock_organizations_repository=mock_org_repo,
+        )
+        repo.save(iter([{"id": "real-1", "name": "Real Org"}]))
+
+        assert consumed == [
+            {"id": "real-1", "name": "Real Org"},
+            {"id": "mock-1", "name": "Mock Org"},
+        ]
+
+    def test_save_when_id_already_in_stream_raises_exception(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        inner = mocker.Mock(spec=SearchIndexStreamRepository)
+        consumed: list[NormalizedOrganization] = []
+        expected_message = "Duplicate organization id between normalized organizations and mock organizations: dupe-id"
+        inner.save.side_effect = lambda orgs: consumed.extend(orgs)
+
+        mock_org_repo = mocker.Mock(spec=MockOrganizationRepository)
+        mock_org_repo.read_mock_organizations.return_value = [
+            {"id": "dupe-id", "name": "Mock Duplicate"},
+        ]
+
+        repo = MockOrganizationMergerDecorator(
+            decorated=inner,
+            mock_organizations_repository=mock_org_repo,
         )
 
-    def test_save_propagates_writer_exception(
-        self,
-        tmp_path: Path,
-        search_index: SearchIndex,
-        mocker: MockerFixture,
-    ) -> None:
-        temp_dir = tmp_path / "search-index"
-        target_file = tmp_path / "index.json"
-        file_writer = mocker.Mock(spec=AtomicFileWriter)
-        file_writer.write.side_effect = RuntimeError("writer failed")
-
-        repo = SearchIndexFileRepository(output_path=target_file, temp_path=temp_dir, file_writer=file_writer)
-
-        with pytest.raises(RuntimeError, match="writer failed"):
-            repo.save(search_index)
+        with pytest.raises(RuntimeError, match=expected_message):
+            repo.save(iter([{"id": "dupe-id", "name": "Real Org"}]))
 
 
 class TestEncryptedEndpointsFileRepository:
@@ -106,7 +192,7 @@ class TestMockOrganizationsFileRepo:
         mock_file = tmp_path / "mock-addressing.json"
         mock_file.write_bytes(orjson.dumps({"9999999990000001": "https://mock.example/resource"}))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_addressing_path=mock_file, mock_organizations_path=tmp_path / "mock-organizations.json"
         )
 
@@ -116,7 +202,7 @@ class TestMockOrganizationsFileRepo:
         mock_file = tmp_path / "mock-addressing.json"
         mock_file.write_bytes(orjson.dumps({"1": "https://a.example", "01": "https://b.example"}))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_addressing_path=mock_file, mock_organizations_path=tmp_path / "mock-organizations.json"
         )
 
@@ -127,7 +213,7 @@ class TestMockOrganizationsFileRepo:
         mock_file = tmp_path / "mock-organizations.json"
         mock_file.write_bytes(orjson.dumps([{"name": "Missing id"}]))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_addressing_path=tmp_path / "mock-addressing.json", mock_organizations_path=mock_file
         )
 
@@ -135,7 +221,7 @@ class TestMockOrganizationsFileRepo:
             repo.read_mock_organizations()
 
     def test_read_mock_organizations_raises_when_file_not_found(self, tmp_path: Path) -> None:
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_organizations_path=tmp_path / "nonexistent.json",
             mock_addressing_path=tmp_path / "mock-addressing.json",
         )
@@ -147,7 +233,7 @@ class TestMockOrganizationsFileRepo:
         mock_file = tmp_path / "mock-organizations.json"
         mock_file.write_bytes(orjson.dumps({"id": "not-a-list"}))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_organizations_path=mock_file,
             mock_addressing_path=tmp_path / "mock-addressing.json",
         )
@@ -160,7 +246,7 @@ class TestMockOrganizationsFileRepo:
         orgs = [{"id": "agb:1", "name": "Org 1"}, {"id": "agb:2", "name": "Org 2"}]
         mock_file.write_bytes(orjson.dumps(orgs))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_organizations_path=mock_file,
             mock_addressing_path=tmp_path / "mock-addressing.json",
         )
@@ -168,7 +254,7 @@ class TestMockOrganizationsFileRepo:
         assert repo.read_mock_organizations() == orgs
 
     def test_get_unique_mock_endpoints_raises_when_file_not_found(self, tmp_path: Path) -> None:
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_organizations_path=tmp_path / "mock-organizations.json",
             mock_addressing_path=tmp_path / "nonexistent.json",
         )
@@ -180,7 +266,7 @@ class TestMockOrganizationsFileRepo:
         mock_file = tmp_path / "mock-addressing.json"
         mock_file.write_bytes(orjson.dumps(["not-a-dict"]))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_organizations_path=tmp_path / "mock-organizations.json",
             mock_addressing_path=mock_file,
         )
@@ -192,7 +278,7 @@ class TestMockOrganizationsFileRepo:
         mock_file = tmp_path / "mock-addressing.json"
         mock_file.write_bytes(orjson.dumps({"1": ""}))
 
-        repo = MockOrganizationsFileRepo(
+        repo = MockOrganizationRepository(
             mock_organizations_path=tmp_path / "mock-organizations.json",
             mock_addressing_path=mock_file,
         )
@@ -212,7 +298,7 @@ class TestMockEndpointsRepository:
             Endpoint(id=1, url="https://db.example/auth"),
         ]
 
-        mock_organization_repository = mocker.Mock(spec=MockOrganizationsFileRepo)
+        mock_organization_repository = mocker.Mock(spec=MockOrganizationRepository)
         mock_organization_repository.get_unique_mock_endpoints.return_value = {
             2: "{{DVA_MOCK_URL}}/resource",
             3: "https://keep.example/token",

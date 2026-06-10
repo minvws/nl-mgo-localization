@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "EUPL-1.2"
 dependencies = [
-    "uvicorn>=0.41.0,<0.42",
+    "uvicorn>=0.41.0,<0.43",
     "fastapi>=0.131.0,<0.136",
     "pydantic-settings>=2.12.0,<3",
     "sqlalchemy>=2.0.45,<3",
@@ -16,7 +16,7 @@ dependencies = [
     "xmltodict>=1.0.4,<2",
     "requests>=2.32.5,<3",
     "fhir-resources>=8.1.0,<9",
-    "cryptography>=46.0.5,<47",
+    "cryptography>=46.0.7,<47",
     "orjson>=3.11.5,<4",
     "defusedxml>=0.7.1,<0.8",
     "lxml>=6.0.2,<7",
@@ -24,11 +24,12 @@ dependencies = [
     "brotli>=1.1.0,<2",
     "jwcrypto>=1.5.6,<2",
     "types-jwcrypto>=1.5.0.20251102,<2",
+    "nl-mgo-keystore-repository",
 ]
 
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2,<10",
+    "pytest>=9.0.3,<10",
     "pytest-cov>=7.0.0,<8",
     "httpx>=0.28.1,<0.29",
     "ruff>=0.15.2,<0.16",
@@ -50,6 +51,9 @@ dev = [
 [tool.uv]
 default-groups = "all"
 package = false
+
+[tool.uv.sources]
+nl-mgo-keystore-repository = { git = "https://github.com/minvws/nl-mgo-keystore-repository.git", tag = "v0.1.0" }
 
 [build-system]
 requires = ["uv_build>=0.9.30,<0.10.0"]

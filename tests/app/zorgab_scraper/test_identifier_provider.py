@@ -4,7 +4,8 @@ from pytest_mock import MockerFixture
 from app.addressing.models import IdentificationType
 from app.zorgab_scraper.config import IdentifierSource
 from app.zorgab_scraper.models import Identifier
-from app.zorgab_scraper.services import IdentifierProvider, IdentifierRepository
+from app.zorgab_scraper.repositories import IdentifierRepository
+from app.zorgab_scraper.services import IdentifierProvider
 
 
 class DummyRepository(IdentifierRepository):

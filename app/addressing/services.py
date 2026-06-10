@@ -1,7 +1,7 @@
 import inject
+from mgo_keystore_repositories import JWKRepository as KeyStoreRepository
 
 from app.addressing.constants import ENDPOINT_JWE_EXPIRATION_SECONDS
-from app.addressing.repositories import KeyStoreRepository
 
 from .factories import EndpointJWEFactory, EndpointJWTFactory
 

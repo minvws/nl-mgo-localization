@@ -1,8 +1,15 @@
+from collections.abc import Iterator
 from dataclasses import dataclass
 
-from fhir.resources.STU3.bundle import Bundle
+from fhir.resources.STU3.organization import Organization
 
 from app.addressing.models import IdentificationType
+
+
+@dataclass(frozen=True)
+class OrganizationBundleEntry:
+    full_url: str | None
+    resource: Organization
 
 
 @dataclass(frozen=True)
@@ -16,7 +23,7 @@ class Identifier:
 
 @dataclass
 class ScrapeResult:
-    bundles: list[Bundle]  # for each scraped organization, a single bundle is returned and we aggregate them here
+    bundle_entries: Iterator[OrganizationBundleEntry]
     not_found: list[str]
     errors: list[str]
     filename: str | None = None

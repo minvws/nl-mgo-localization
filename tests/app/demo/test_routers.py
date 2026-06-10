@@ -52,6 +52,7 @@ def test_it_can_get_the_demo_healthcare_organizations_from_the_demo_endpoint(
             [
                 {"name": "Basisgegevens Zorg", "id": "48"},
                 {"name": "Documenten", "id": "51"},
+                {"name": "BeeldBeschikbaarheid", "id": "9000002"},
             ],
         ),
         (

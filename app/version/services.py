@@ -6,5 +6,5 @@ from .models import VersionInfo
 
 
 def read_version_info() -> VersionInfo:
-    with open(root_path("version.json"), "r") as file:
+    with open(root_path("public", "version.json"), "r") as file:
         return VersionInfo(**json.load(file))

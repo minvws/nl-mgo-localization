@@ -1,115 +1,22 @@
-import csv
 import logging
-from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime
+from collections import deque
+from collections.abc import Iterator, Sequence
+from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Lock
-from xml.etree import ElementTree
 
 import inject
-from fhir.resources.STU3.bundle import Bundle
+from fhir.resources.STU3.identifier import Identifier as FhirIdentifier
+from fhir.resources.STU3.organization import Organization as FhirOrganization
 
-from app.addressing.models import IdentificationType
+from app.fhir_uris import FHIR_NAMINGSYSTEM_AGB_Z, FHIR_NAMINGSYSTEM_URA
 from app.healthcarefinder.interface import HealthcareFinderAdapter
-from app.zorgab_scraper.config import IdentifierSource, ZorgABScraperConfig
-from app.zorgab_scraper.factories import SearchRequestFactory
-from app.zorgab_scraper.models import Identifier, ScrapeResult
+
+from .config import IdentifierSource
+from .factories import SearchRequestFactory
+from .models import Identifier, OrganizationBundleEntry, ScrapeResult
+from .repositories import IdentifierRepository
 
 logger = logging.getLogger(__name__)
-
-
-class IdentifierRepository(ABC):
-    @abstractmethod
-    def get_identifiers(self, limit: int | None = None) -> list[Identifier]: ...
-
-
-class ZaklXmlIdentifierRepository(IdentifierRepository):
-    @inject.autoparams("zorgab_scrape_config")
-    def __init__(self, zorgab_scrape_config: ZorgABScraperConfig) -> None:
-        if not zorgab_scrape_config.zakl_path:
-            raise ValueError("When using the ZaklXmlIdentifierRepository, zorgab_scraper.zakl_path must be set")
-        self.__path = zorgab_scrape_config.zakl_path
-
-    def get_identifiers(self, limit: int | None = None) -> list[Identifier]:
-        tree = ElementTree.parse(self.__path)
-        root = tree.getroot()
-        ns = {"zakl": "xmlns://afsprakenstelsel.medmij.nl/Zorgaanbiederskoppellijst/release1/"}
-
-        identifiers: set[Identifier] = set()
-
-        for zorgaanbieder in root.findall(".//zakl:Zorgaanbieder", ns):
-            ura_elem = zorgaanbieder.find(".//zakl:URA", ns)
-            if ura_elem is not None and ura_elem.text:
-                identifiers.add(Identifier(IdentificationType.ura, ura_elem.text.strip()))
-
-            agb_elem = zorgaanbieder.find(".//zakl:AGB", ns)
-            if agb_elem is not None and agb_elem.text:
-                identifiers.add(Identifier(IdentificationType.agbz, agb_elem.text.strip()))
-
-        identifier_list = list(identifiers)
-        total_found = len(identifier_list)
-
-        if limit is not None and limit > 0:
-            identifier_list = identifier_list[:limit]
-            logger.info(
-                "Extracted a limited amount of identifiers to first %d of %d",
-                len(identifier_list),
-                total_found,
-            )
-        else:
-            logger.info("Extracted %d identifiers from %s", total_found, self.__path.name)
-
-        return identifier_list
-
-
-class AgbCsvIdentifierRepository(IdentifierRepository):
-    @inject.autoparams("zorgab_scrape_config")
-    def __init__(self, zorgab_scrape_config: ZorgABScraperConfig) -> None:
-        if not zorgab_scrape_config.agb_csv_path:
-            raise ValueError("When using the AgbCsvIdentifierRepository, zorgab_scraper.agb_csv_path must be set")
-
-        self.__path = zorgab_scrape_config.agb_csv_path
-
-    def get_identifiers(self, limit: int | None = None) -> list[Identifier]:
-        today = date.today()
-        identifiers: list[Identifier] = []
-        seen: set[str] = set()
-
-        with self.__path.open(newline="", encoding="utf-8") as handle:
-            reader = csv.DictReader(handle)
-            for row in reader:
-                agb_value = (row.get("AGB_Nummer") or "").strip()
-                if not agb_value or agb_value in seen:
-                    continue
-
-                end_date_raw = (row.get("AGB_Datumeinde") or "").strip()
-                if end_date_raw:
-                    try:
-                        end_date = datetime.strptime(end_date_raw, "%Y%m%d").date()
-                    except ValueError:
-                        logger.debug("Skipping AGB %s with invalid end date %s", agb_value, end_date_raw)
-                        continue
-
-                    if end_date < today:
-                        continue
-
-                seen.add(agb_value)
-                identifiers.append(Identifier(IdentificationType.agbz, agb_value))
-
-        total_found = len(identifiers)
-
-        if limit is not None and limit > 0 and total_found > limit:
-            identifiers = identifiers[:limit]
-            logger.info(
-                "Extracted a limited amount of identifiers to first %d of %d",
-                len(identifiers),
-                total_found,
-            )
-        else:
-            logger.info("Extracted %d identifiers from %s", total_found, self.__path.name)
-
-        return identifiers
 
 
 class IdentifierProvider:
@@ -187,8 +94,6 @@ class ZorgabScrapeExecutor:
         It validates identifiers it received to ensure only supported types are used (agb and ura).
         Then it performs concurrent searches for organizations using the HealthcareFinderAdapter.
         Finally, it collects the results into a ScrapeResult object.
-        This ScrapeResult contains found bundles, so a bundle for each successful search.
-
         """
         if not identifiers:
             raise ValueError("No identifiers to scrape")
@@ -206,44 +111,139 @@ class ZorgabScrapeExecutor:
             workers,
         )
 
-        bundles: list[Bundle] = []
         not_found: list[str] = []
         errors: list[str] = []
         lock = Lock()
 
-        # Define the function that performs the find request so it can be used in threads
-        def perform_find_request(identifier: Identifier) -> None:
+        def make_search_organizations_request(identifier: Identifier) -> list[OrganizationBundleEntry]:
             search = SearchRequestFactory.create_for_identifier(identifier)
             assert search is not None
 
             try:
                 raw_fhir = self.__healthcare_finder.search_organizations_raw_fhir(search)
-                if raw_fhir and raw_fhir.entry:
-                    result_count = len(raw_fhir.entry)
-                    if result_count > 1:
-                        logger.debug(
-                            "Multiple organizations returned for %s: %d",
-                            identifier.token().upper(),
-                            result_count,
-                        )
+
+                if not raw_fhir or not raw_fhir.entry:
+                    logger.debug("No organizations found for %s", identifier.token().upper())
 
                     with lock:
-                        bundles.append(raw_fhir)
-                    return
+                        not_found.append(identifier.token().upper())
 
-                logger.debug("No organizations found for %s", identifier.token().upper())
-                with lock:
-                    not_found.append(identifier.token().upper())
-                return
+                    return []
+
+                result_count = len(raw_fhir.entry)
+
+                if result_count > 1:
+                    logger.debug(
+                        "Multiple organizations returned for %s: %d",
+                        identifier.token().upper(),
+                        result_count,
+                    )
+
+                return [
+                    OrganizationBundleEntry(full_url=entry.fullUrl, resource=entry.resource)
+                    for entry in raw_fhir.entry
+                    if isinstance(entry.resource, FhirOrganization)
+                ]
             except Exception as exc:
                 logger.exception("Error searching for %s", identifier.token().upper())
                 with lock:
                     errors.append(f"{identifier.token().upper()}: {exc}")
-                return
+                return []
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(perform_find_request, identifier) for identifier in valid_identifiers]
-            for future in as_completed(futures):
-                future.result()
+        def stream_bundle_entries_from_zorgab() -> Iterator[OrganizationBundleEntry]:
+            window = max_workers * 2
+            pending: deque[Future[list[OrganizationBundleEntry]]] = deque()
 
-        return ScrapeResult(bundles=bundles, not_found=not_found, errors=errors)
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for identifier in valid_identifiers:
+                    pending.append(executor.submit(make_search_organizations_request, identifier))
+
+                    if len(pending) >= window:
+                        yield from pending.popleft().result()
+
+                while pending:
+                    yield from pending.popleft().result()
+
+        return ScrapeResult(bundle_entries=stream_bundle_entries_from_zorgab(), not_found=not_found, errors=errors)
+
+
+class OrganizationDeduplicator:
+    def __init__(self) -> None:
+        self.__seen_resource_keys: set[str] = set()
+        self.__seen_normalized_identifier_keys: set[str] = set()
+
+    def reset(self) -> None:
+        self.__seen_resource_keys.clear()
+        self.__seen_normalized_identifier_keys.clear()
+
+    def should_include(self, organization_bundle_entry: OrganizationBundleEntry) -> bool:
+        """Decide if an organization should be kept in the merged bundle.
+
+        Deduplication uses two distinct key types:
+        - Resource deduplication key: `Organization.id` (or `BundleEntry.fullUrl` fallback)
+          to detect exact duplicate resources.
+        - Normalized identifier keys: `agb:<value>` and `ura:<value>` to detect the same
+          real-world organization returned through different lookups (e.g. AGB vs URA)
+          or with different FHIR resource IDs.
+        """
+
+        fhir_organization = organization_bundle_entry.resource
+        deduplication_key = fhir_organization.id or organization_bundle_entry.full_url
+
+        if not deduplication_key:
+            return False
+
+        if deduplication_key in self.__seen_resource_keys:
+            return False
+
+        normalized_identifier_keys = self.__collect_normalized_identifier_keys(fhir_organization)
+        duplicate_identifier_key = self.__find_seen_identifier(normalized_identifier_keys)
+
+        if duplicate_identifier_key is not None:
+            logger.debug(
+                "Skipping duplicate organization with normalized ID: %s (FHIR ID: %s)",
+                duplicate_identifier_key,
+                fhir_organization.id,
+            )
+
+            self.__remember(deduplication_key, normalized_identifier_keys)
+
+            return False
+
+        self.__remember(deduplication_key, normalized_identifier_keys)
+
+        return True
+
+    def __remember(self, resource_key: str, normalized_identifier_keys: list[str]) -> None:
+        self.__seen_resource_keys.add(resource_key)
+
+        for normalized_identifier_key in normalized_identifier_keys:
+            self.__seen_normalized_identifier_keys.add(normalized_identifier_key)
+
+    def __find_seen_identifier(self, normalized_identifier_keys: list[str]) -> str | None:
+        for normalized_identifier_key in normalized_identifier_keys:
+            if normalized_identifier_key in self.__seen_normalized_identifier_keys:
+                return normalized_identifier_key
+
+        return None
+
+    def __collect_normalized_identifier_keys(self, fhir_organization: FhirOrganization) -> list[str]:
+        normalized_identifier_keys: list[str] = []
+
+        if not fhir_organization.identifier:
+            return normalized_identifier_keys
+
+        for identifier_object in fhir_organization.identifier:
+            try:
+                identifier = FhirIdentifier.model_validate(identifier_object)
+            except Exception:
+                logger.warning("Unknown identifier format for %s: %s", fhir_organization.id, identifier_object)
+                continue
+
+            if identifier.system == FHIR_NAMINGSYSTEM_AGB_Z and identifier.value:
+                normalized_identifier_keys.append(f"agb:{identifier.value}")
+
+            if identifier.system == FHIR_NAMINGSYSTEM_URA and identifier.value:
+                normalized_identifier_keys.append(f"ura:{identifier.value}")
+
+        return normalized_identifier_keys

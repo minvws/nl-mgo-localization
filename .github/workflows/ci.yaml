@@ -37,7 +37,7 @@ jobs:
 
             - name: Install dependencies
               uses: ./.github/actions/setup-app
-
+              
             - name: Find format differences
               run: uv run $(make format-diff --just-print --silent)
 
@@ -65,7 +65,6 @@ jobs:
 
             - name: Install dependencies
               uses: ./.github/actions/setup-app
-
             - name: Run spelling check
               run: uv run $(make spelling-check --just-print --silent)
 
